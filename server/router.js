@@ -1,5 +1,5 @@
 import { HttpError, parseJsonBody, requireDevAuth, sendJson } from "./http-helpers.js";
-import { frontendUrl } from "./config.js";
+import { serveSpaFallback, serveStaticAsset } from "./static-files.js";
 import { validateMutation } from "./validators.js";
 
 const resourceRouteNames = new Set(["campaigns", "content", "calendar", "social-posts"]);
@@ -10,13 +10,16 @@ export function createRouter({ store, port }) {
     const url = new URL(req.url || "/", "http://localhost");
     const pathSegments = url.pathname.split("/").filter(Boolean);
 
-    if (url.pathname === "/" && method === "GET") {
-      res.writeHead(302, {
-        Location: frontendUrl,
-        "Cache-Control": "no-store",
-      });
-      res.end();
-      return;
+    if (!url.pathname.startsWith("/api/")) {
+      if (await serveStaticAsset(req, res)) {
+        return;
+      }
+
+      if (await serveSpaFallback(req, res)) {
+        return;
+      }
+
+      throw new HttpError(404, "NOT_FOUND", "Route not found.");
     }
 
     if (url.pathname === "/api/health" && method === "GET") {
@@ -29,8 +32,13 @@ export function createRouter({ store, port }) {
       return;
     }
 
-    if (!url.pathname.startsWith("/api/")) {
-      throw new HttpError(404, "NOT_FOUND", "Route not found.");
+    if (url.pathname === "/api") {
+      sendJson(req, res, 200, {
+        service: "1pm-marketing-command-center-api",
+        health: "/api/health",
+        bootstrap: "/api/bootstrap",
+      });
+      return;
     }
 
     requireDevAuth(req);

@@ -96,7 +96,7 @@ function App() {
   const liveCampaignRows = bootstrap?.campaigns?.length ? bootstrap.campaigns : campaignRows;
 
   return (
-    <AppShell activePage={activePage} onNavigate={setActivePage} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} apiStatus={apiStatus}>
+    <AppShell activePage={activePage} onNavigate={setActivePage} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} apiStatus={apiStatus} currentUser={bootstrap?.currentUser}>
       {activePage === "overview" && <OverviewPage metrics={liveOverviewMetrics} />}
       {activePage === "content-studio" && <ContentStudioPage />}
       {activePage === "content-calendar" && <ContentCalendarPage />}

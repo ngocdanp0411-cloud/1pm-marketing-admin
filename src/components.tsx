@@ -8,17 +8,22 @@ interface ShellProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   apiStatus: "live" | "fallback" | "loading";
+  currentUser?: {
+    name: string;
+    role: string;
+    email: string;
+  };
   children: React.ReactNode;
 }
 
-export function AppShell({ activePage, onNavigate, sidebarOpen, setSidebarOpen, apiStatus, children }: ShellProps) {
+export function AppShell({ activePage, onNavigate, sidebarOpen, setSidebarOpen, apiStatus, currentUser, children }: ShellProps) {
   const [title, subtitle] = pageMeta[activePage];
 
   return (
     <div className="app-shell">
-      <Sidebar activePage={activePage} onNavigate={onNavigate} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar activePage={activePage} onNavigate={onNavigate} open={sidebarOpen} onClose={() => setSidebarOpen(false)} currentUser={currentUser} />
       <main className="main">
-        <TopBar title={title} subtitle={subtitle} apiStatus={apiStatus} onMenu={() => setSidebarOpen(true)} primaryAction={activePage === "brand-assets" ? "New Brand Kit" : activePage === "local-marketing" ? "Add Location" : activePage === "social-posting" ? "New Post" : activePage === "content-studio" || activePage === "content-calendar" ? "New Content" : "New Campaign"} />
+        <TopBar title={title} subtitle={subtitle} apiStatus={apiStatus} currentUser={currentUser} onMenu={() => setSidebarOpen(true)} primaryAction={activePage === "brand-assets" ? "New Brand Kit" : activePage === "local-marketing" ? "Add Location" : activePage === "social-posting" ? "New Post" : activePage === "content-studio" || activePage === "content-calendar" ? "New Content" : "New Campaign"} />
         <div className="page">{children}</div>
       </main>
     </div>
@@ -30,9 +35,14 @@ interface SidebarProps {
   onNavigate: (page: PageKey) => void;
   open: boolean;
   onClose: () => void;
+  currentUser?: {
+    name: string;
+    role: string;
+    email: string;
+  };
 }
 
-function Sidebar({ activePage, onNavigate, open, onClose }: SidebarProps) {
+function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: SidebarProps) {
   return (
     <>
       <aside className={`sidebar ${open ? "open" : ""}`}>
@@ -58,14 +68,14 @@ function Sidebar({ activePage, onNavigate, open, onClose }: SidebarProps) {
           })}
         </nav>
         <PlanCard />
-        <UserCard compact />
+        <UserCard compact user={currentUser} />
       </aside>
       {open && <button className="backdrop" aria-label="Close navigation" onClick={onClose} />}
     </>
   );
 }
 
-function TopBar({ title, subtitle, primaryAction, apiStatus, onMenu }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; onMenu: () => void }) {
+function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; currentUser?: { name: string; role: string; email: string }; onMenu: () => void }) {
   return (
     <header className="topbar">
       <button className="mobile-menu icon-btn" aria-label="Open navigation" onClick={onMenu}><Menu /></button>
@@ -81,7 +91,7 @@ function TopBar({ title, subtitle, primaryAction, apiStatus, onMenu }: { title: 
         </label>
         <span className={`api-badge ${apiStatus}`}>{apiStatus === "live" ? "Live API" : apiStatus === "loading" ? "Connecting" : "Local fallback"}</span>
         <button className="icon-btn notification" aria-label="Notifications"><Bell /><span /></button>
-        <UserCard />
+        <UserCard user={currentUser} />
         <button className="primary-btn" aria-label={`${primaryAction} menu`}><Plus />{primaryAction}<ChevronDown /></button>
       </div>
     </header>
@@ -99,11 +109,17 @@ function PlanCard() {
   );
 }
 
-function UserCard({ compact = false }: { compact?: boolean }) {
+function UserCard({ compact = false, user }: { compact?: boolean; user?: { name: string; role: string; email: string } }) {
+  const displayUser = user ?? {
+    name: "Ngọc Dân",
+    role: "Admin",
+    email: "ngocdanp0411@gmail.com",
+  };
+
   return (
     <button className={`user-card ${compact ? "compact" : ""}`}>
       <span className="avatar" />
-      <span><strong>Olivia Morgan</strong><small>{compact ? "olivia@marketingroom.co" : "Admin"}</small></span>
+      <span><strong>{displayUser.name}</strong><small>{compact ? displayUser.email : displayUser.role}</small></span>
       <ChevronDown />
     </button>
   );

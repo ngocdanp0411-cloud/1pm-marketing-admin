@@ -1,12 +1,12 @@
 import http from "node:http";
 
-import { resolvePort } from "./config.js";
+import { resolvePort, serverHost } from "./config.js";
 import { handlePreflight, sendError } from "./http-helpers.js";
 import { createRouter } from "./router.js";
 import { AppStateStore } from "./state-store.js";
 
 const port = resolvePort(process.env.PORT);
-const host = "127.0.0.1";
+const host = serverHost;
 const store = new AppStateStore();
 
 try {

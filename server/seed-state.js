@@ -20,9 +20,9 @@ export function createSeedState() {
     },
     currentUser: {
       id: "user-dev-1pm",
-      name: "Dev Operator",
-      email: "dev@1pm.local",
-      role: "Marketing Ops Lead",
+      name: "Ngọc Dân",
+      email: "ngocdanp0411@gmail.com",
+      role: "Admin",
     },
     campaigns: seedCampaigns,
     contentItems: seedContentItems,
