@@ -4,7 +4,7 @@
 
 This app deploys as one Node service:
 
-- `npm run build` builds the React frontend into `dist/`
+- Railway/Nixpacks installs dependencies, then `npm run build` builds the React frontend into `dist/`
 - `npm start` runs `server/index.js`
 - The backend serves both `/api/*` and the static frontend from `dist/`
 
