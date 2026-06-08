@@ -24,3 +24,13 @@ This app deploys as one Node service:
 ## Notes
 
 JSON storage is fine for a public demo. It is not durable production storage; use PostgreSQL before real customer/team use.
+
+## Multi-Channel Operations Layer
+
+The current publish workflow is an internal demo layer:
+
+- Supports Instagram, Threads, TikTok, Facebook Page, LinkedIn, and X connection status.
+- Supports JSON-store publish states, publish logs, notifications, and retry behavior.
+- Does not publish to external social APIs yet.
+
+Before public customer use, add OAuth/app-review-backed adapters per platform and move persistence from JSON store to PostgreSQL.

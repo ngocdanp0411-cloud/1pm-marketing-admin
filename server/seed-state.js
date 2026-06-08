@@ -4,6 +4,8 @@ import {
   seedCalendarEvents,
   seedIntegrations,
   seedLocalListings,
+  seedNotifications,
+  seedPublishLogs,
   seedSocialQueue,
   seedTeamMembers,
 } from "./seed-supporting-records.js";
@@ -30,6 +32,8 @@ export function createSeedState() {
     brandAssets: seedBrandAssets,
     teamMembers: seedTeamMembers,
     integrations: seedIntegrations,
+    publishLogs: seedPublishLogs,
+    notifications: seedNotifications,
     socialQueue: seedSocialQueue,
     localListings: seedLocalListings,
   };

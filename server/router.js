@@ -2,7 +2,7 @@ import { HttpError, parseJsonBody, requireDevAuth, sendJson } from "./http-helpe
 import { serveSpaFallback, serveStaticAsset } from "./static-files.js";
 import { validateMutation } from "./validators.js";
 
-const resourceRouteNames = new Set(["campaigns", "content", "calendar", "social-posts"]);
+const resourceRouteNames = new Set(["campaigns", "content", "calendar", "social-posts", "integrations", "publish-logs", "notifications"]);
 
 export function createRouter({ store, port }) {
   return async function route(req, res) {
@@ -59,9 +59,23 @@ export function createRouter({ store, port }) {
     }
 
     const recordId = pathSegments[2];
+    const subAction = pathSegments[3];
+
+    if (resourceName === "social-posts" && recordId && subAction === "publish" && method === "POST" && pathSegments.length === 4) {
+      const result = await store.publishSocialPost(recordId);
+      if (!result) {
+        throw new HttpError(404, "NOT_FOUND", "Record not found.");
+      }
+
+      sendJson(req, res, 200, result);
+      return;
+    }
+
     if (pathSegments.length > 3) {
       throw new HttpError(404, "NOT_FOUND", "Route not found.");
     }
+
+    enforceResourceMethod(resourceName, method, recordId);
 
     if (method === "GET") {
       if (recordId) {
@@ -95,7 +109,12 @@ export function createRouter({ store, port }) {
         throw new HttpError(405, "METHOD_NOT_ALLOWED", "PATCH requires a record id.");
       }
 
-      const payload = validateMutation(resourceName, await parseJsonBody(req), { partial: true });
+      const rawPayload = await parseJsonBody(req);
+      if (resourceName === "notifications") {
+        enforceNotificationPatch(rawPayload);
+      }
+
+      const payload = validateMutation(resourceName, rawPayload, { partial: true });
       const record = await store.update(resourceName, recordId, payload);
       if (!record) {
         throw new HttpError(404, "NOT_FOUND", "Record not found.");
@@ -124,4 +143,23 @@ export function createRouter({ store, port }) {
 
     throw new HttpError(405, "METHOD_NOT_ALLOWED", `Method ${method} is not supported for this route.`);
   };
+}
+
+function enforceResourceMethod(resourceName, method, recordId) {
+  if (resourceName === "publish-logs" && method !== "GET") {
+    throw new HttpError(405, "METHOD_NOT_ALLOWED", "Publish logs are append-only and read-only through the public API.");
+  }
+
+  if (resourceName === "notifications") {
+    if (method === "GET") return;
+    if (method === "PATCH" && recordId) return;
+    throw new HttpError(405, "METHOD_NOT_ALLOWED", "Notifications support GET and status PATCH only.");
+  }
+}
+
+function enforceNotificationPatch(payload) {
+  const fields = Object.keys(payload);
+  if (fields.length !== 1 || fields[0] !== "status") {
+    throw new HttpError(400, "INVALID_BODY", "Notifications can only update status.");
+  }
 }

@@ -27,6 +27,10 @@ Core endpoints:
 - `GET|PATCH|DELETE /api/calendar/:id`
 - `GET|POST /api/social-posts`
 - `GET|PATCH|DELETE /api/social-posts/:id`
+- `POST /api/social-posts/:id/publish`
+- `GET|PATCH /api/integrations/:id`
+- `GET /api/publish-logs`
+- `GET|PATCH /api/notifications/:id`
 
 Persistence:
 
@@ -39,9 +43,12 @@ Behavior notes:
 - `Authorization` is required for every `/api/*` route except `/api/health`
 - JSON request bodies are limited to 1 MB
 - Error responses use a consistent shape: `{ "ok": false, "error": { ... } }`
+- Multi-channel publishing is a demo operations layer. It updates JSON state, publish logs, and notifications; it does not call external Instagram, Threads, TikTok, Facebook, LinkedIn, or X APIs yet.
+- Publish logs are read-only through the public API. Notifications allow status-only PATCH.
 
 Production swap notes:
 
 - Replace the dev bearer token with real auth middleware
 - Replace the JSON file store with a database-backed repository layer
 - Tighten CORS origins to deployed frontend hosts only
+- Add OAuth/app-review-backed adapters for each social network before claiming real external publishing

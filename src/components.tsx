@@ -8,6 +8,7 @@ interface ShellProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   apiStatus: "live" | "fallback" | "loading";
+  onPrimaryAction?: (page: PageKey) => void;
   currentUser?: {
     name: string;
     role: string;
@@ -16,14 +17,14 @@ interface ShellProps {
   children: React.ReactNode;
 }
 
-export function AppShell({ activePage, onNavigate, sidebarOpen, setSidebarOpen, apiStatus, currentUser, children }: ShellProps) {
+export function AppShell({ activePage, onNavigate, sidebarOpen, setSidebarOpen, apiStatus, onPrimaryAction, currentUser, children }: ShellProps) {
   const [title, subtitle] = pageMeta[activePage];
 
   return (
     <div className="app-shell">
       <Sidebar activePage={activePage} onNavigate={onNavigate} open={sidebarOpen} onClose={() => setSidebarOpen(false)} currentUser={currentUser} />
       <main className="main">
-        <TopBar title={title} subtitle={subtitle} apiStatus={apiStatus} currentUser={currentUser} onMenu={() => setSidebarOpen(true)} primaryAction={activePage === "brand-assets" ? "New Brand Kit" : activePage === "local-marketing" ? "Add Location" : activePage === "social-posting" ? "New Post" : activePage === "content-studio" || activePage === "content-calendar" ? "New Content" : "New Campaign"} />
+        <TopBar title={title} subtitle={subtitle} apiStatus={apiStatus} currentUser={currentUser} onMenu={() => setSidebarOpen(true)} onPrimaryAction={() => onPrimaryAction?.(activePage)} primaryAction={activePage === "brand-assets" ? "New Brand Kit" : activePage === "local-marketing" ? "Add Location" : activePage === "social-posting" ? "New Post" : activePage === "content-studio" || activePage === "content-calendar" ? "New Content" : "New Campaign"} />
         <div className="page">{children}</div>
       </main>
     </div>
@@ -75,7 +76,7 @@ function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: Sidebar
   );
 }
 
-function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; currentUser?: { name: string; role: string; email: string }; onMenu: () => void }) {
+function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu, onPrimaryAction }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; currentUser?: { name: string; role: string; email: string }; onMenu: () => void; onPrimaryAction: () => void }) {
   return (
     <header className="topbar">
       <button className="mobile-menu icon-btn" aria-label="Open navigation" onClick={onMenu}><Menu /></button>
@@ -92,7 +93,7 @@ function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu
         <span className={`api-badge ${apiStatus}`}>{apiStatus === "live" ? "Live API" : apiStatus === "loading" ? "Connecting" : "Local fallback"}</span>
         <button className="icon-btn notification" aria-label="Notifications"><Bell /><span /></button>
         <UserCard user={currentUser} />
-        <button className="primary-btn" aria-label={`${primaryAction} menu`}><Plus />{primaryAction}<ChevronDown /></button>
+        <button className="primary-btn" aria-label={`${primaryAction} menu`} onClick={onPrimaryAction}><Plus />{primaryAction}<ChevronDown /></button>
       </div>
     </header>
   );
