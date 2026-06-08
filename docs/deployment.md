@@ -2,6 +2,10 @@
 
 ## Platform: Railway
 
+## Production URL
+
+https://web-production-2556d0.up.railway.app
+
 This app deploys as one Node service:
 
 - Railway/Nixpacks installs dependencies, then `npm run build` builds the React frontend into `dist/`
