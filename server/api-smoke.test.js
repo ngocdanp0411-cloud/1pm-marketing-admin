@@ -4,6 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { createServer } from "node:http";
 import test from "node:test";
 
 const token = "test-1pm-token";
@@ -11,7 +12,12 @@ const token = "test-1pm-token";
 test("backend API supports health, auth, bootstrap, and campaign CRUD", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "1pm-api-test-"));
   const port = 19087 + Math.floor(Math.random() * 1000);
+  const facebookGraphPort = 21087 + Math.floor(Math.random() * 1000);
   const dataFilePath = path.join(tempDir, "app-state.json");
+  const graphRequests = [];
+  const graphServer = createMockFacebookGraphServer(graphRequests);
+  await new Promise((resolve) => graphServer.listen(facebookGraphPort, "127.0.0.1", resolve));
+
   const server = spawn(process.execPath, ["server/index.js"], {
     cwd: process.cwd(),
     env: {
@@ -19,6 +25,9 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
       PORT: String(port),
       DEV_API_TOKEN: token,
       DATA_FILE_PATH: dataFilePath,
+      FACEBOOK_GRAPH_API_BASE_URL: `http://127.0.0.1:${facebookGraphPort}`,
+      FACEBOOK_PAGE_ID: "fb-page-smoke",
+      FACEBOOK_PAGE_ACCESS_TOKEN: "fb-page-token-smoke",
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -88,6 +97,23 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     assert.equal(successfulPublish.data.log.status, "published");
     assert.match(successfulPublish.data.post.externalPostId, /^demo-tiktok-/);
 
+    const facebookPost = await postJson(port, "/api/social-posts", {
+      title: "Facebook API Smoke",
+      channel: "Facebook Page",
+      copy: "Publishing through the Facebook Graph API.",
+    });
+    assert.equal(facebookPost.ok, true);
+
+    const facebookPublish = await postJson(port, `/api/social-posts/${facebookPost.data.id}/publish`);
+    assert.equal(facebookPublish.ok, true);
+    assert.equal(facebookPublish.data.post.status, "Published");
+    assert.equal(facebookPublish.data.log.status, "published");
+    assert.equal(facebookPublish.data.post.externalPostId, "fb-page-smoke_12345");
+    assert.equal(graphRequests.length, 1);
+    assert.equal(graphRequests[0].pathname, "/fb-page-smoke/feed");
+    assert.equal(graphRequests[0].body.get("message"), "Publishing through the Facebook Graph API.");
+    assert.equal(graphRequests[0].body.get("access_token"), "fb-page-token-smoke");
+
     const logs = await getJson(port, "/api/publish-logs", { auth: true });
     assert.ok(logs.data.some((item) => item.postId === tiktokPost.data.id && item.status === "published"));
 
@@ -113,6 +139,46 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     });
     assert.equal(invalidNotificationPatch.ok, false);
     assert.equal(invalidNotificationPatch.error.code, "INVALID_BODY");
+  } finally {
+    const exitPromise = server.exitCode === null ? once(server, "exit") : Promise.resolve();
+    server.kill("SIGTERM");
+    await exitPromise.catch(() => {});
+    await rm(tempDir, { force: true, recursive: true });
+    await new Promise((resolve) => graphServer.close(resolve));
+  }
+});
+
+test("facebook publishing fails clearly without Graph API credentials", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "1pm-api-test-"));
+  const port = 20087 + Math.floor(Math.random() * 1000);
+  const dataFilePath = path.join(tempDir, "app-state.json");
+  const server = spawn(process.execPath, ["server/index.js"], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      PORT: String(port),
+      DEV_API_TOKEN: token,
+      DATA_FILE_PATH: dataFilePath,
+      FACEBOOK_PAGE_ID: "",
+      FACEBOOK_PAGE_ACCESS_TOKEN: "",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  try {
+    await waitForServer(server, port);
+
+    const facebookPost = await postJson(port, "/api/social-posts", {
+      title: "Facebook Missing Credentials",
+      channel: "Facebook Page",
+      copy: "This should not publish without credentials.",
+    });
+
+    const facebookPublish = await postJson(port, `/api/social-posts/${facebookPost.data.id}/publish`);
+    assert.equal(facebookPublish.ok, true);
+    assert.equal(facebookPublish.data.post.status, "Failed");
+    assert.equal(facebookPublish.data.log.status, "failed");
+    assert.match(facebookPublish.data.post.lastPublishError, /FACEBOOK_PAGE_ID/);
   } finally {
     const exitPromise = server.exitCode === null ? once(server, "exit") : Promise.resolve();
     server.kill("SIGTERM");
@@ -179,4 +245,26 @@ async function requestJson(port, pathname, options) {
   });
 
   return response.json();
+}
+
+function createMockFacebookGraphServer(requests) {
+  return createServer(async (req, res) => {
+    const url = new URL(req.url || "/", "http://127.0.0.1");
+    const chunks = [];
+    for await (const chunk of req) {
+      chunks.push(chunk);
+    }
+
+    const body = new URLSearchParams(Buffer.concat(chunks).toString("utf8"));
+    requests.push({ method: req.method, pathname: url.pathname, body });
+
+    if (req.method !== "POST" || url.pathname !== "/fb-page-smoke/feed") {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: { message: "Not found" } }));
+      return;
+    }
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ id: "fb-page-smoke_12345" }));
+  });
 }

@@ -10,6 +10,9 @@ export const devAuthToken = process.env.DEV_API_TOKEN || "dev-1pm-token";
 export const jsonBodyLimitBytes = 1024 * 1024;
 export const dataFilePath = process.env.DATA_FILE_PATH || path.join(projectRoot, "data", "app-state.json");
 export const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173/";
+export const facebookGraphApiBaseUrl = process.env.FACEBOOK_GRAPH_API_BASE_URL || "https://graph.facebook.com/v23.0";
+export const facebookPageId = process.env.FACEBOOK_PAGE_ID || "";
+export const facebookPageAccessToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || "";
 export const allowedOrigins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",

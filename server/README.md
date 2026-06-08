@@ -43,12 +43,19 @@ Behavior notes:
 - `Authorization` is required for every `/api/*` route except `/api/health`
 - JSON request bodies are limited to 1 MB
 - Error responses use a consistent shape: `{ "ok": false, "error": { ... } }`
-- Multi-channel publishing is a demo operations layer. It updates JSON state, publish logs, and notifications; it does not call external Instagram, Threads, TikTok, Facebook, LinkedIn, or X APIs yet.
+- Multi-channel publishing updates JSON state, publish logs, and notifications. Facebook Page publishing can call the real Graph API when configured; Instagram, Threads, TikTok, LinkedIn, and X remain demo operations adapters.
 - Publish logs are read-only through the public API. Notifications allow status-only PATCH.
+
+Facebook Page publishing:
+
+- Set `FACEBOOK_PAGE_ID` to the target Page ID.
+- Set `FACEBOOK_PAGE_ACCESS_TOKEN` to a Page access token with `pages_manage_posts`.
+- Optional: set `FACEBOOK_GRAPH_API_BASE_URL` to override the Graph API version/base URL.
+- `POST /api/social-posts/:id/publish` publishes Facebook channel posts to `/{page-id}/feed`.
 
 Production swap notes:
 
 - Replace the dev bearer token with real auth middleware
 - Replace the JSON file store with a database-backed repository layer
 - Tighten CORS origins to deployed frontend hosts only
-- Add OAuth/app-review-backed adapters for each social network before claiming real external publishing
+- Add OAuth/app-review-backed adapters for each remaining social network before claiming real external publishing

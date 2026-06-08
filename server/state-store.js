@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { dataFilePath } from "./config.js";
+import { publishFacebookPagePost } from "./facebook-publisher.js";
 import { HttpError } from "./http-helpers.js";
 import { createSeedState } from "./seed-state.js";
 import { resourceDefinitions } from "./validators.js";
@@ -134,18 +135,17 @@ export class AppStateStore {
     }
 
     const integration = findIntegrationForChannel(this.state.integrations, existing.channel);
-    const canPublish = integration?.status === "connected" && integration?.tokenHealth === "healthy";
-    const externalPostId = canPublish ? `demo-${normalizeProvider(existing.channel)}-${randomUUID().slice(0, 8)}` : null;
-    const errorMessage = canPublish ? "" : buildPublishError(existing.channel, integration);
-    const nextStatus = canPublish ? "Published" : "Failed";
+    const publishResult = await resolvePublishResult(existing, integration);
+    const errorMessage = publishResult.ok ? "" : publishResult.message;
+    const nextStatus = publishResult.ok ? "Published" : "Failed";
 
     const updatedPost = {
       ...existing,
       status: nextStatus,
       publishStatus: nextStatus,
       lastPublishError: errorMessage,
-      publishedAt: canPublish ? now : existing.publishedAt ?? null,
-      externalPostId,
+      publishedAt: publishResult.ok ? now : existing.publishedAt ?? null,
+      externalPostId: publishResult.externalPostId,
       updatedAt: now,
     };
 
@@ -153,18 +153,18 @@ export class AppStateStore {
       id: `publish-log-${randomUUID()}`,
       postId: existing.id,
       channel: existing.channel,
-      status: canPublish ? "published" : "failed",
-      message: canPublish ? `Demo publish succeeded for ${existing.channel}.` : errorMessage,
-      externalPostId,
+      status: publishResult.ok ? "published" : "failed",
+      message: publishResult.message,
+      externalPostId: publishResult.externalPostId,
       createdAt: now,
     };
 
     const notification = {
       id: `notification-${randomUUID()}`,
-      type: canPublish ? "publish" : "integration",
-      title: canPublish ? "Post published" : `${existing.channel} publish failed`,
-      message: canPublish ? `${existing.title} is now marked as published in the operations layer.` : errorMessage,
-      severity: canPublish ? "success" : "warning",
+      type: publishResult.ok ? "publish" : "integration",
+      title: publishResult.ok ? "Post published" : `${existing.channel} publish failed`,
+      message: publishResult.ok ? `${existing.title} published to ${existing.channel}.` : errorMessage,
+      severity: publishResult.ok ? "success" : "warning",
       status: "unread",
       relatedId: existing.id,
       createdAt: now,
@@ -211,6 +211,29 @@ export class AppStateStore {
 
     await this.writeChain;
   }
+}
+
+async function resolvePublishResult(post, integration) {
+  const provider = normalizeProvider(post.channel);
+  const canPublish = integration?.status === "connected" && integration?.tokenHealth === "healthy";
+
+  if (!canPublish) {
+    return {
+      ok: false,
+      message: buildPublishError(post.channel, integration),
+      externalPostId: null,
+    };
+  }
+
+  if (provider === "facebook") {
+    return publishFacebookPagePost(post, integration);
+  }
+
+  return {
+    ok: true,
+    message: `Demo publish succeeded for ${post.channel}.`,
+    externalPostId: `demo-${provider}-${randomUUID().slice(0, 8)}`,
+  };
 }
 
 function buildOverviewMetrics(state) {
