@@ -1,6 +1,18 @@
+import { useEffect, useMemo, useState } from "react";
 import { Bell, ChevronDown, Command, Menu, Plus, Search } from "lucide-react";
 import { pageMeta, navItems } from "./data";
 import type { Metric, PageKey } from "./types";
+
+const visitQuotes = [
+  "Small daily actions compound into serious growth.",
+  "Ship the important work before the urgent work steals the day.",
+  "Marketing gets stronger when every action has a next step.",
+  "Clear data, clear priorities, better decisions.",
+  "Build momentum first. Optimize once the signal is real.",
+  "A focused campaign beats a busy calendar.",
+  "Consistency is the quiet engine behind every strong brand.",
+  "One useful post can do more than ten rushed ones.",
+];
 
 interface ShellProps {
   activePage: PageKey;
@@ -77,12 +89,26 @@ function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: Sidebar
 }
 
 function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu, onPrimaryAction }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; currentUser?: { name: string; role: string; email: string }; onMenu: () => void; onPrimaryAction: () => void }) {
+  const [now, setNow] = useState(() => new Date());
+  const quote = useMemo(() => visitQuotes[Math.floor(Math.random() * visitQuotes.length)], []);
+  const firstName = getFirstName(currentUser?.name ?? "Ngọc Dân");
+  const greeting = getTimeGreeting(now);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <header className="topbar">
       <button className="mobile-menu icon-btn" aria-label="Open navigation" onClick={onMenu}><Menu /></button>
       <div className="heading">
         <h1>{title}</h1>
         <p>{subtitle}</p>
+        <div className="time-greeting">
+          <strong>{greeting}, {firstName}</strong>
+          <span>{quote}</span>
+        </div>
       </div>
       <div className="top-actions">
         <label className="search">
@@ -97,6 +123,19 @@ function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu
       </div>
     </header>
   );
+}
+
+function getTimeGreeting(date: Date) {
+  const hour = date.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function getFirstName(name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return "there";
+  return trimmed.split(/\s+/)[0];
 }
 
 function PlanCard() {

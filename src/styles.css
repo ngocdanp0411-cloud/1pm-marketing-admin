@@ -68,6 +68,9 @@ h1, h2, h3 { font-family: Sora, Manrope, sans-serif; letter-spacing: 0; }
 h1 { font-size: 26px; line-height: 1.1; }
 h2 { font-size: 17px; }
 h3 { font-size: 15px; }
+.time-greeting { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 9px; color: #dcebdd; }
+.time-greeting strong { font-size: 14px; color: #f3fff0; }
+.time-greeting span { min-width: 0; max-width: 560px; color: var(--muted); font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
 .top-actions { display: flex; align-items: center; gap: 14px; }
 .search { width: 320px; height: 46px; padding: 0 12px; gap: 10px; border-radius: var(--radius); }
 .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 16px; }
@@ -220,8 +223,14 @@ kbd { color: var(--muted); display: inline-flex; align-items: center; gap: 2px; 
 .calendar-grid button.muted { color: #637069; }
 .calendar-grid em { display: block; margin-top: 8px; padding: 6px; border-radius: 5px; background: rgba(85,152,91,.42); font-size: 12px; color: #e7f4e6; }
 .calendar-grid small { display: block; color: #dbe7dc; margin-top: 2px; }
-.day-details article { position: relative; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,.03); }
-.day-details article span { position: absolute; right: 14px; top: 14px; color: var(--muted); }
+.day-details article { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 12px; align-items: start; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,.03); }
+.day-item-main { min-width: 0; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 6px 8px; }
+.day-item-main svg { grid-row: span 2; }
+.day-item-main strong, .day-item-main p { min-width: 0; overflow-wrap: anywhere; }
+.day-item-main p { grid-column: 1 / -1; color: var(--muted); line-height: 1.35; }
+.day-item-meta { display: grid; justify-items: end; gap: 8px; max-width: 150px; }
+.day-item-meta time { color: var(--muted); font-size: 13px; line-height: 1.25; text-align: right; white-space: normal; }
+.day-item-meta .status-pill { max-width: 100%; white-space: normal; text-align: center; }
 .stacked-bar { height: 8px; display: flex; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.12); margin: 12px 0; }
 .stacked-bar span:first-child { width: 72%; background: var(--green); }
 .stacked-bar span:nth-child(2) { width: 14%; background: var(--amber); }
@@ -389,9 +398,11 @@ kbd { color: var(--muted); display: inline-flex; align-items: center; gap: 2px; 
 
 @media (min-width: 901px) and (max-width: 1600px) {
   .topbar { gap: 12px; }
-  .heading { flex: 0 0 190px; }
+  .heading { flex: 1 1 300px; }
   .heading h1 { white-space: nowrap; }
   .heading p { font-size: 13px; line-height: 1.4; }
+  .time-greeting { gap: 6px; }
+  .time-greeting span { max-width: 300px; }
   .top-actions { min-width: 0; flex: 1; gap: 8px; }
   .search { width: clamp(210px, 22vw, 280px); }
   .user-card:not(.compact) { min-width: 170px; }

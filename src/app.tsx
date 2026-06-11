@@ -830,7 +830,7 @@ function CalendarGrid({ selectedDay, onSelect }: { selectedDay: number; onSelect
 }
 
 function DayDetails() {
-  return <div className="day-details"><h3>3 Items Scheduled</h3>{["Blog Post", "Story", "Product Update Email"].map((item, i) => <article key={item}><FileText /><strong>{item}</strong><span>{["10:00 AM", "4:00 PM", "9:00 AM (May 15)"][i]}</span><p>{["How AI is Shaping the Future of Marketing", "Behind the Scenes: Team Day", "May Product Updates & Improvements"][i]}</p><StatusPill text={i === 2 ? "Pending Approval" : "Scheduled"} /></article>)}<h3>Approval Status</h3><div className="stacked-bar"><span /><span /><span /></div><button className="wide-btn">View Day Details</button></div>;
+  return <div className="day-details"><h3>3 Items Scheduled</h3>{["Blog Post", "Story", "Product Update Email"].map((item, i) => <article key={item}><div className="day-item-main"><FileText /><strong>{item}</strong><p>{["How AI is Shaping the Future of Marketing", "Behind the Scenes: Team Day", "May Product Updates & Improvements"][i]}</p></div><div className="day-item-meta"><time>{["10:00 AM", "4:00 PM", "9:00 AM (May 15)"][i]}</time><StatusPill text={i === 2 ? "Pending Approval" : "Scheduled"} /></div></article>)}<h3>Approval Status</h3><div className="stacked-bar"><span /><span /><span /></div><button className="wide-btn">View Day Details</button></div>;
 }
 
 function Bars() {
