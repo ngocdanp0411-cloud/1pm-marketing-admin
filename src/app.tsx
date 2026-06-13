@@ -506,9 +506,9 @@ function ContentStudioPage({ items, campaigns, pendingAction, onOpenWorkflow, on
   return (
     <>
       <MetricGrid metrics={studioMetrics} />
-      <div className="content-layout">
+      <div className="content-layout studio-layout">
         <div>
-          <Panel title="Content Workflow" action="Board">
+          <Panel title="Content Workflow" action="Board" className="kanban-panel">
             <div className="board-tools"><button><Filter /> Filter</button><button><SlidersHorizontal /> Sort</button><button aria-label="More board options"><MoreVertical /></button></div>
             <KanbanBoard items={groupedItems} pendingAction={pendingAction} onOpenWorkflow={onOpenWorkflow} onApproveContent={onApproveContent} />
           </Panel>

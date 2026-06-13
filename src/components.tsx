@@ -37,6 +37,7 @@ export function AppShell({ activePage, onNavigate, sidebarOpen, setSidebarOpen, 
       <Sidebar activePage={activePage} onNavigate={onNavigate} open={sidebarOpen} onClose={() => setSidebarOpen(false)} currentUser={currentUser} />
       <main className="main">
         <TopBar title={title} subtitle={subtitle} apiStatus={apiStatus} currentUser={currentUser} onMenu={() => setSidebarOpen(true)} onPrimaryAction={() => onPrimaryAction?.(activePage)} primaryAction={activePage === "brand-assets" ? "New Brand Kit" : activePage === "local-marketing" ? "Add Location" : activePage === "social-posting" ? "New Post" : activePage === "content-studio" || activePage === "content-calendar" ? "New Content" : "New Campaign"} />
+        <WelcomeStrip currentUser={currentUser} />
         <div className="page">{children}</div>
       </main>
     </div>
@@ -89,26 +90,12 @@ function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: Sidebar
 }
 
 function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu, onPrimaryAction }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; currentUser?: { name: string; role: string; email: string }; onMenu: () => void; onPrimaryAction: () => void }) {
-  const [now, setNow] = useState(() => new Date());
-  const quote = useMemo(() => visitQuotes[Math.floor(Math.random() * visitQuotes.length)], []);
-  const firstName = getFirstName(currentUser?.name ?? "Ngọc Dân");
-  const greeting = getTimeGreeting(now);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
-
   return (
     <header className="topbar">
       <button className="mobile-menu icon-btn" aria-label="Open navigation" onClick={onMenu}><Menu /></button>
       <div className="heading">
         <h1>{title}</h1>
         <p>{subtitle}</p>
-        <div className="time-greeting">
-          <strong>{greeting}, {firstName}</strong>
-          <span>{quote}</span>
-        </div>
       </div>
       <div className="top-actions">
         <label className="search">
@@ -122,6 +109,29 @@ function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu
         <button className="primary-btn" aria-label={`${primaryAction} menu`} onClick={onPrimaryAction}><Plus />{primaryAction}<ChevronDown /></button>
       </div>
     </header>
+  );
+}
+
+function WelcomeStrip({ currentUser }: { currentUser?: { name: string } }) {
+  const [now, setNow] = useState(() => new Date());
+  const quote = useMemo(() => visitQuotes[Math.floor(Math.random() * visitQuotes.length)], []);
+  const firstName = getFirstName(currentUser?.name ?? "Ngọc Dân");
+  const greeting = getTimeGreeting(now);
+  const timeLabel = now.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <section className="welcome-strip" aria-label="Daily briefing">
+      <div>
+        <span>{timeLabel}</span>
+        <strong>{greeting}, {firstName}</strong>
+      </div>
+      <p>{quote}</p>
+    </section>
   );
 }
 
@@ -170,9 +180,11 @@ export function MetricCard({ metric }: { metric: Metric }) {
   return (
     <section className="metric-card">
       <div className="metric-icon"><Icon /></div>
-      <span>{metric.label}</span>
-      <strong>{metric.value}</strong>
-      <small className={metric.tone === "bad" ? "bad" : ""}>↑ {metric.trend} <em>vs last 30 days</em></small>
+      <div className="metric-copy">
+        <span>{metric.label}</span>
+        <strong>{metric.value}</strong>
+        <small className={metric.tone === "bad" ? "bad" : ""}>↑ {metric.trend} <em>vs last 30 days</em></small>
+      </div>
       <SparkLine />
     </section>
   );
