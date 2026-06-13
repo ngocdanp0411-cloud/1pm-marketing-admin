@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bell, ChevronDown, Command, Menu, Plus, Search } from "lucide-react";
 import { pageMeta, navItems } from "./data";
+import { useI18n } from "./i18n";
 import type { Metric, PageKey } from "./types";
 
 const visitQuotes = [
@@ -30,13 +31,23 @@ interface ShellProps {
 }
 
 export function AppShell({ activePage, onNavigate, sidebarOpen, setSidebarOpen, apiStatus, onPrimaryAction, currentUser, children }: ShellProps) {
+  const { t } = useI18n();
   const [title, subtitle] = pageMeta[activePage];
+  const primaryAction = activePage === "brand-assets"
+    ? "New Brand Kit"
+    : activePage === "local-marketing"
+      ? "Add Location"
+      : activePage === "social-posting"
+        ? "New Post"
+        : activePage === "content-studio" || activePage === "content-calendar"
+          ? "New Content"
+          : "New Campaign";
 
   return (
     <div className="app-shell">
       <Sidebar activePage={activePage} onNavigate={onNavigate} open={sidebarOpen} onClose={() => setSidebarOpen(false)} currentUser={currentUser} />
       <main className="main">
-        <TopBar title={title} subtitle={subtitle} apiStatus={apiStatus} currentUser={currentUser} onMenu={() => setSidebarOpen(true)} onPrimaryAction={() => onPrimaryAction?.(activePage)} primaryAction={activePage === "brand-assets" ? "New Brand Kit" : activePage === "local-marketing" ? "Add Location" : activePage === "social-posting" ? "New Post" : activePage === "content-studio" || activePage === "content-calendar" ? "New Content" : "New Campaign"} />
+        <TopBar title={t(title)} subtitle={t(subtitle)} apiStatus={apiStatus} currentUser={currentUser} onMenu={() => setSidebarOpen(true)} onPrimaryAction={() => onPrimaryAction?.(activePage)} primaryAction={t(primaryAction)} />
         <WelcomeStrip currentUser={currentUser} />
         <div className="page">{children}</div>
       </main>
@@ -57,6 +68,7 @@ interface SidebarProps {
 }
 
 function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: SidebarProps) {
+  const { t } = useI18n();
   return (
     <>
       <aside className={`sidebar ${open ? "open" : ""}`}>
@@ -66,7 +78,7 @@ function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: Sidebar
         </div>
         <button className="workspace">
           <span className="workspace-mark">MR</span>
-          <span><strong>Marketing Room</strong><small>Personal Workspace</small></span>
+          <span><strong>{t("Marketing Room")}</strong><small>{t("Personal Workspace")}</small></span>
           <ChevronDown />
         </button>
         <nav className="nav-list" aria-label="Main navigation">
@@ -75,7 +87,7 @@ function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: Sidebar
             return (
           <button key={item.key} className={`nav-item ${activePage === item.key ? "active" : ""}`} aria-current={activePage === item.key ? "page" : undefined} onClick={() => { onNavigate(item.key); onClose(); }}>
                 <Icon />
-                <span>{item.label}</span>
+                <span>{t(item.label)}</span>
                 {activePage === item.key && <i />}
               </button>
             );
@@ -90,6 +102,9 @@ function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: Sidebar
 }
 
 function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu, onPrimaryAction }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; currentUser?: { name: string; role: string; email: string }; onMenu: () => void; onPrimaryAction: () => void }) {
+  const { language, toggleLanguage, t } = useI18n();
+  const statusText = apiStatus === "live" ? "Live API" : apiStatus === "loading" ? "Connecting" : "Local fallback";
+
   return (
     <header className="topbar">
       <button className="mobile-menu icon-btn" aria-label="Open navigation" onClick={onMenu}><Menu /></button>
@@ -100,10 +115,13 @@ function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu
       <div className="top-actions">
         <label className="search">
           <Search />
-          <input aria-label="Search" placeholder="Search anything..." />
+          <input aria-label="Search" placeholder={t("Search anything...")} />
           <kbd><Command />K</kbd>
         </label>
-        <span className={`api-badge ${apiStatus}`}>{apiStatus === "live" ? "Live API" : apiStatus === "loading" ? "Connecting" : "Local fallback"}</span>
+        <button className="language-toggle" type="button" onClick={toggleLanguage} aria-label="Switch language">
+          {language === "vi" ? "VI" : "EN"}
+        </button>
+        <span className={`api-badge ${apiStatus}`}>{t(statusText)}</span>
         <button className="icon-btn notification" aria-label="Notifications"><Bell /><span /></button>
         <UserCard user={currentUser} />
         <button className="primary-btn" aria-label={`${primaryAction} menu`} onClick={onPrimaryAction}><Plus />{primaryAction}<ChevronDown /></button>
@@ -113,6 +131,7 @@ function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu
 }
 
 function WelcomeStrip({ currentUser }: { currentUser?: { name: string } }) {
+  const { t } = useI18n();
   const [now, setNow] = useState(() => new Date());
   const quote = useMemo(() => visitQuotes[Math.floor(Math.random() * visitQuotes.length)], []);
   const firstName = getFirstName(currentUser?.name ?? "Ngọc Dân");
@@ -128,9 +147,9 @@ function WelcomeStrip({ currentUser }: { currentUser?: { name: string } }) {
     <section className="welcome-strip" aria-label="Daily briefing">
       <div>
         <span>{timeLabel}</span>
-        <strong>{greeting}, {firstName}</strong>
+        <strong>{t(greeting)}, {firstName}</strong>
       </div>
-      <p>{quote}</p>
+      <p>{t(quote)}</p>
     </section>
   );
 }
@@ -149,17 +168,19 @@ function getFirstName(name: string) {
 }
 
 function PlanCard() {
+  const { t } = useI18n();
   return (
     <section className="plan-card">
-      <div><strong>PRO PLAN</strong><span>68 / 100</span></div>
+      <div><strong>{t("PRO PLAN")}</strong><span>68 / 100</span></div>
       <div className="progress"><span style={{ width: "68%" }} /></div>
-      <small>Resets in 13 days</small>
-      <button aria-label="Upgrade current pro plan">Upgrade Plan</button>
+      <small>{t("Resets in 13 days")}</small>
+      <button aria-label="Upgrade current pro plan">{t("Upgrade Plan")}</button>
     </section>
   );
 }
 
 function UserCard({ compact = false, user }: { compact?: boolean; user?: { name: string; role: string; email: string } }) {
+  const { t } = useI18n();
   const displayUser = user ?? {
     name: "Ngọc Dân",
     role: "Admin",
@@ -169,21 +190,22 @@ function UserCard({ compact = false, user }: { compact?: boolean; user?: { name:
   return (
     <button className={`user-card ${compact ? "compact" : ""}`}>
       <span className="avatar" />
-      <span><strong>{displayUser.name}</strong><small>{compact ? displayUser.email : displayUser.role}</small></span>
+      <span><strong>{displayUser.name}</strong><small>{compact ? displayUser.email : t(displayUser.role)}</small></span>
       <ChevronDown />
     </button>
   );
 }
 
 export function MetricCard({ metric }: { metric: Metric }) {
+  const { t } = useI18n();
   const Icon = metric.icon;
   return (
     <section className="metric-card">
       <div className="metric-icon"><Icon /></div>
       <div className="metric-copy">
-        <span>{metric.label}</span>
+        <span>{t(metric.label)}</span>
         <strong>{metric.value}</strong>
-        <small className={metric.tone === "bad" ? "bad" : ""}>↑ {metric.trend} <em>vs last 30 days</em></small>
+        <small className={metric.tone === "bad" ? "bad" : ""}>↑ {metric.trend} <em>{t("vs last 30 days")}</em></small>
       </div>
       <SparkLine />
     </section>
@@ -191,11 +213,12 @@ export function MetricCard({ metric }: { metric: Metric }) {
 }
 
 export function Panel({ title, action, children, className = "" }: { title: string; action?: string; children: React.ReactNode; className?: string }) {
+  const { t } = useI18n();
   return (
     <section className={`panel ${className}`}>
       <div className="panel-head">
-        <h2>{title}</h2>
-        {action && <button>{action}</button>}
+        <h2>{t(title)}</h2>
+        {action && <button>{t(action)}</button>}
       </div>
       {children}
     </section>
@@ -225,14 +248,16 @@ export function LineChart({ three = false }: { three?: boolean }) {
 }
 
 export function Donut({ label = "92%" }: { label?: string }) {
+  const { t } = useI18n();
   return (
     <div className="donut" style={{ "--value": "76%" } as React.CSSProperties}>
       <span>{label}</span>
-      <small>{label.includes("%") ? "Success Rate" : "/100"}</small>
+      <small>{label.includes("%") ? t("Success Rate") : "/100"}</small>
     </div>
   );
 }
 
 export function StatusPill({ text }: { text: string }) {
-  return <span className={`pill ${text.toLowerCase().replace(/\s+/g, "-")}`}>{text}</span>;
+  const { t } = useI18n();
+  return <span className={`pill ${text.toLowerCase().replace(/\s+/g, "-")}`}>{t(text)}</span>;
 }
