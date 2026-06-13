@@ -45,6 +45,7 @@ import {
   studioMetrics,
   teamMembers,
 } from "./data";
+import { useI18n } from "./i18n";
 import { createRecord, deleteRecord, fetchOperationsBootstrap, publishSocialPost, updateRecord, type OperationsBootstrap } from "./operations-api";
 import type { CampaignRow, ChannelIntegration, ContentItem, Metric, OperationsNotification, PageKey, PublishLog, SocialPost } from "./types";
 
@@ -75,6 +76,7 @@ const calendarMetrics: Metric[] = [
 ];
 
 function App() {
+  const { t } = useI18n();
   const [activePage, setActivePage] = useState<PageKey>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bootstrap, setBootstrap] = useState<OperationsBootstrap | null>(null);
@@ -348,7 +350,7 @@ function App() {
 
   return (
     <AppShell activePage={activePage} onNavigate={setActivePage} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} apiStatus={apiStatus} currentUser={bootstrap?.currentUser} onPrimaryAction={handlePrimaryAction}>
-      {apiStatus === "fallback" && <div className="connection-banner" role="status"><AlertCircle /><span><strong>Operations API offline.</strong> Data is read-only until the backend reconnects.</span><button onClick={() => loadBootstrap()}>Retry</button></div>}
+      {apiStatus === "fallback" && <div className="connection-banner" role="status"><AlertCircle /><span><strong>{t("Operations API offline.")}</strong> {t("Data is read-only until the backend reconnects.")}</span><button onClick={() => loadBootstrap()}>{t("Retry")}</button></div>}
       {activePage === "overview" && <OverviewPage metrics={liveOverviewMetrics} notifications={liveNotifications} />}
       {activePage === "content-studio" && <ContentStudioPage items={liveContentItems} campaigns={liveCampaignRows} pendingAction={pendingAction} onOpenWorkflow={openWorkflow} onApproveContent={updateContentStatus} />}
       {activePage === "content-calendar" && <ContentCalendarPage />}
@@ -360,7 +362,7 @@ function App() {
       {activePage === "local-marketing" && <LocalMarketingPage />}
       {activePage === "settings" && <SettingsPage integrations={liveIntegrations} notifications={liveNotifications} pendingAction={pendingAction} onToggleIntegration={toggleIntegration} />}
       {workflowRequest && <ActionWorkflowModal request={workflowRequest} campaigns={liveCampaignRows} busy={workflowBusy} error={workflowError} onClose={() => setWorkflowRequest(null)} onSubmit={handleWorkflowSubmit} />}
-      {notice && <div className="toast" role="status">{notice}</div>}
+      {notice && <div className="toast" role="status">{t(notice)}</div>}
     </AppShell>
   );
 }
@@ -687,6 +689,7 @@ function SocialPostingPage({
 }
 
 function LocalMarketingPage() {
+  const { t } = useI18n();
   const localMetrics: Metric[] = [
     { label: "Listing Health", value: "92%", trend: "8.4%", icon: ShieldCheck },
     { label: "Local Reach", value: "24.8K", trend: "18.7%", icon: Users },
@@ -696,7 +699,7 @@ function LocalMarketingPage() {
   return (
     <>
       <Toolbar buttons={["May 18 - May 24, 2025", "Add Location"]} />
-      <div className="connection-banner"><AlertCircle /><span><strong>Coming later.</strong> Local Marketing is deferred until Google Business Profile and listings APIs are connected.</span></div>
+      <div className="connection-banner"><AlertCircle /><span><strong>{t("Coming later.")}</strong> {t("Local Marketing is deferred until Google Business Profile and listings APIs are connected.")}</span></div>
       <MetricGrid metrics={localMetrics} />
       <div className="local-layout">
         <Panel title="Local Listings" action="Planned"><List items={["Google Business Profile Planned connection", "Bing Places Planned connection", "Apple Maps Planned connection", "Facebook Planned connection", "Yelp Planned connection", "Tripadvisor Planned connection"]} /></Panel>
@@ -711,10 +714,11 @@ function LocalMarketingPage() {
 }
 
 function SettingsPage({ integrations, notifications, pendingAction, onToggleIntegration }: { integrations: ChannelIntegration[]; notifications: OperationsNotification[]; pendingAction: string; onToggleIntegration: (integration: ChannelIntegration) => void }) {
+  const { t } = useI18n();
   const [tab, setTab] = useState("Workspace");
   return (
     <>
-      <div className="settings-tabs" role="tablist" aria-label="Settings sections">{["Workspace", "Team", "Roles & Permissions", "Integrations", "Notifications", "Billing", "Security", "Preferences"].map((item) => <button role="tab" aria-selected={tab === item} key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{item}</button>)}</div>
+      <div className="settings-tabs" role="tablist" aria-label="Settings sections">{["Workspace", "Team", "Roles & Permissions", "Integrations", "Notifications", "Billing", "Security", "Preferences"].map((item) => <button role="tab" aria-selected={tab === item} key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{t(item)}</button>)}</div>
       <div className="settings-layout">
         <div><WorkspaceSettings /><PreferencePanel /></div>
         <div><TeamPanel /><IntegrationsPanel integrations={integrations} pendingAction={pendingAction} onToggleIntegration={onToggleIntegration} /></div>
@@ -729,19 +733,23 @@ function MetricGrid({ metrics, compact = false }: { metrics: Metric[]; compact?:
 }
 
 function Toolbar({ buttons }: { buttons: string[] }) {
-  return <div className="toolbar">{buttons.map((button) => <button key={button} aria-label={button}>{button}</button>)}</div>;
+  const { t } = useI18n();
+  return <div className="toolbar">{buttons.map((button) => <button key={button} aria-label={t(button)}>{t(button)}</button>)}</div>;
 }
 
 function Legend({ labels }: { labels: string[] }) {
-  return <div className="legend">{labels.map((label) => <span key={label}>{label}</span>)}</div>;
+  const { t } = useI18n();
+  return <div className="legend">{labels.map((label) => <span key={label}>{t(label)}</span>)}</div>;
 }
 
 function List({ items }: { items: string[] }) {
-  return <ul className="clean-list">{items.map((item) => <li key={item}><span>{item}</span><small>↑</small></li>)}</ul>;
+  const { t } = useI18n();
+  return <ul className="clean-list">{items.map((item) => <li key={item}><span>{t(item)}</span><small>↑</small></li>)}</ul>;
 }
 
 function ScheduleList() {
-  return <div className="schedule"><div className="date-box">May<strong>24</strong></div>{["Product Launch Campaign", "Social Content Sprint", "Influencer Outreach"].map((item, i) => <div className="event" key={item}><span>{["10:00 AM", "1:00 PM", "3:30 PM"][i]}</span><strong>{item}</strong><small>{["Review meeting", "Content creation", "Follow-ups"][i]}</small></div>)}</div>;
+  const { t } = useI18n();
+  return <div className="schedule"><div className="date-box">May<strong>24</strong></div>{["Product Launch Campaign", "Social Content Sprint", "Influencer Outreach"].map((item, i) => <div className="event" key={item}><span>{["10:00 AM", "1:00 PM", "3:30 PM"][i]}</span><strong>{t(item)}</strong><small>{t(["Review meeting", "Content creation", "Follow-ups"][i])}</small></div>)}</div>;
 }
 
 function PipelinePanel() {
@@ -753,7 +761,8 @@ function ActivityPanel() {
 }
 
 function HealthPanel() {
-  return <Panel title="Marketing Health" action="Manual estimate"><Donut label="87" /><h3>Demo score</h3><p>Health score becomes live after channel publishing and analytics are connected.</p><List items={["Content consistency Manual", "Engagement rate Estimated", "Brand visibility Estimated", "Lead quality Deferred"]} /><button className="wide-btn">View Recommendations</button></Panel>;
+  const { t } = useI18n();
+  return <Panel title="Marketing Health" action="Manual estimate"><Donut label="87" /><h3>{t("Demo score")}</h3><p>{t("Health score becomes live after channel publishing and analytics are connected.")}</p><List items={["Content consistency Manual", "Engagement rate Estimated", "Brand visibility Estimated", "Lead quality Deferred"]} /><button className="wide-btn">{t("View Recommendations")}</button></Panel>;
 }
 
 function NotificationPanel({ notifications }: { notifications: OperationsNotification[] }) {
@@ -795,24 +804,32 @@ function KanbanBoard({ items, pendingAction, onOpenWorkflow, onApproveContent }:
               )}
             </article>
           ))}
-          <button className="add-task-btn" aria-label={`Add item to ${column}`} onClick={() => onOpenWorkflow("content", "create", undefined, { stage: column, status: column === "Review" ? "In Review" : "Ideation" })}>+ Add Item</button>
+          <AddTaskButton column={column} onOpenWorkflow={onOpenWorkflow} />
         </section>
       ))}
     </div>
   );
 }
 
+function AddTaskButton({ column, onOpenWorkflow }: { column: string; onOpenWorkflow: (kind: WorkflowKind, mode?: WorkflowRequest["mode"], initial?: WorkflowRequest["initial"], defaults?: WorkflowRequest["defaults"]) => void }) {
+  const { t } = useI18n();
+  return <button className="add-task-btn" aria-label={`${t("Add item")} ${column}`} onClick={() => onOpenWorkflow("content", "create", undefined, { stage: column, status: column === "Review" ? "In Review" : "Ideation" })}>+ {t("Add Item")}</button>;
+}
+
 function EditorPanel() {
-  return <Panel title="Content Brief: How We Increased ROI by 300%" action="Share"><div className="editor-toolbar">Heading 2 B I U Link Image Table</div><div className="doc"><h3>1. Goal</h3><p>Showcase how our data-driven strategy helped a client increase ROI by 300% in 6 months.</p><h3>2. Target Audience</h3><p>Marketing leaders and growth marketers in SaaS and eCommerce.</p><h3>3. Key Messages</h3><p>Data-driven strategy delivers measurable results. Full-funnel optimization increases efficiency and ROI.</p></div></Panel>;
+  const { t } = useI18n();
+  return <Panel title="Content Brief: How We Increased ROI by 300%" action="Share"><div className="editor-toolbar">{t("Heading 2 B I U Link Image Table")}</div><div className="doc"><h3>{t("1. Goal")}</h3><p>{t("Showcase how our data-driven strategy helped a client increase ROI by 300% in 6 months.")}</p><h3>{t("2. Target Audience")}</h3><p>{t("Marketing leaders and growth marketers in SaaS and eCommerce.")}</p><h3>{t("3. Key Messages")}</h3><p>{t("Data-driven strategy delivers measurable results. Full-funnel optimization increases efficiency and ROI.")}</p></div></Panel>;
 }
 
 function ContentTypeCards() {
+  const { t } = useI18n();
   const items = ["Blog Post", "Social Post", "Email", "Video", "Ad Copy", "Case Study"];
-  return <div className="type-grid">{items.map((item, index) => <button className={index === 0 ? "selected" : ""} key={item}><FileText />{item}<small>{["SEO optimized", "Engagement focused", "Newsletter", "YouTube", "Paid campaigns", "Customer stories"][index]}</small></button>)}</div>;
+  return <div className="type-grid">{items.map((item, index) => <button className={index === 0 ? "selected" : ""} key={item}><FileText />{t(item)}<small>{t(["SEO optimized", "Engagement focused", "Newsletter", "YouTube", "Paid campaigns", "Customer stories"][index])}</small></button>)}</div>;
 }
 
 function AiAssistantPanel() {
-  return <Panel title="AI Assistant" action="BETA"><div className="tabs"><button className="active">Suggestions</button><button>Optimize</button></div>{["Improve headline impact", "Add internal links", "Include data visual"].map((item) => <article className="suggestion" key={item}><SparkLine /><strong>{item}</strong><p>Consider a specific outcome to increase performance.</p><button>View suggestion</button></article>)}</Panel>;
+  const { t } = useI18n();
+  return <Panel title="AI Assistant" action="BETA"><div className="tabs"><button className="active">{t("Suggestions")}</button><button>{t("Optimize")}</button></div>{["Improve headline impact", "Add internal links", "Include data visual"].map((item) => <article className="suggestion" key={item}><SparkLine /><strong>{t(item)}</strong><p>{t("Consider a specific outcome to increase performance.")}</p><button>{t("View suggestion")}</button></article>)}</Panel>;
 }
 
 function RecentFilesPanel({ items }: { items: ContentItem[] }) {
