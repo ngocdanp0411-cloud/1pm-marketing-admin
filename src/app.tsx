@@ -675,7 +675,7 @@ function SocialPostingPage({
       <div>
         <Toolbar buttons={["Select Channels", "Templates", "Media Library"]} />
         <ChannelStrip integrations={integrations} pendingAction={pendingAction} onToggleIntegration={onToggleIntegration} />
-        <div className="grid two social-main"><ComposePanel onSchedule={(copy) => onOpenWorkflow("social", "create", undefined, { copy, title: "New Scheduled Post", status: "Queued", campaignId: campaigns[0]?.id ?? null })} /><PreviewPanel /></div>
+        <div className="grid two social-main"><ComposePanel onSchedule={(draft) => onOpenWorkflow("social", "create", undefined, { ...draft, title: "New Scheduled Post", status: "Queued", campaignId: campaigns[0]?.id ?? null })} /><PreviewPanel /></div>
         <PublishLogPanel logs={publishLogs} />
         <Panel title="Engagement Summary" action="Manual estimate"><MetricGrid metrics={overviewMetrics.slice(1)} compact /></Panel>
       </div>
@@ -971,9 +971,35 @@ function ChannelStrip({ integrations, pendingAction, onToggleIntegration }: { in
   );
 }
 
-function ComposePanel({ onSchedule }: { onSchedule: (copy: string) => void }) {
+function ComposePanel({ onSchedule }: { onSchedule: (draft: Pick<SocialPost, "copy" | "scheduledFor" | "mediaUrl">) => void }) {
   const [copy, setCopy] = useState("Big things are coming! We're excited to share new updates that will help you work smarter, create faster and grow stronger.\nStay tuned for what's next.");
-  return <Panel title="Compose Post" action="Multi-channel"><textarea className="compose" aria-label="Post content" value={copy} onChange={(event) => setCopy(event.target.value)} /><div className="media-strip"><span /><span /><span /><button aria-label="Add media"><Plus /></button></div><div className="hashtag-row">{["# Marketing", "# Growth", "# DigitalMarketing", "# 1PMplatform"].map((tag) => <button key={tag}>{tag}</button>)}</div><button className="primary-btn wide" onClick={() => onSchedule(copy)}>Schedule Post</button></Panel>;
+  const [mediaUrl, setMediaUrl] = useState("");
+  const [scheduledFor, setScheduledFor] = useState(() => toLocalDatetimeInput(new Date(Date.now() + 24 * 60 * 60 * 1000)));
+
+  return (
+    <Panel title="Compose Post" action="Text · Image · Schedule">
+      <div className="composer-stack">
+        <label className="composer-field">
+          <span>Text</span>
+          <textarea className="compose" aria-label="Post content" value={copy} onChange={(event) => setCopy(event.target.value)} />
+        </label>
+        <label className="composer-field">
+          <span>Ảnh</span>
+          <input type="url" value={mediaUrl} onChange={(event) => setMediaUrl(event.target.value)} placeholder="https://.../image.png hoặc link ảnh" />
+        </label>
+        <label className="composer-field">
+          <span>Hẹn giờ</span>
+          <input type="datetime-local" value={scheduledFor} onChange={(event) => setScheduledFor(event.target.value)} />
+        </label>
+        <div className="media-strip" aria-label="Selected media preview">
+          {mediaUrl ? <span className="media-preview-filled"><Image />Ảnh đã thêm</span> : <span><Image />Chưa có ảnh</span>}
+          <button type="button" aria-label="Add media" onClick={() => setMediaUrl("https://cdn.1pm.app/demo/social-post.png")}><Plus /> Thêm ảnh mẫu</button>
+        </div>
+        <div className="hashtag-row">{["# Marketing", "# Growth", "# DigitalMarketing", "# 1PMplatform"].map((tag) => <button key={tag}>{tag}</button>)}</div>
+        <button className="primary-btn wide" onClick={() => onSchedule({ copy, mediaUrl, scheduledFor })}><CalendarDays /> Schedule Post</button>
+      </div>
+    </Panel>
+  );
 }
 
 function PreviewPanel() {
@@ -1042,6 +1068,11 @@ function ApprovalsPanel({ posts, pendingAction, onUpdateStatus }: { posts: Socia
 
 function TopPostPanel() {
   return <Panel title="Top Performing Post" action="View All"><div className="post-image small">1PM</div><List items={["Reach 78.4K", "Engagements 6.21K", "Eng. Rate 7.92%"]} /></Panel>;
+}
+
+function toLocalDatetimeInput(date: Date) {
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
 }
 
 function EmptyState({ title, description }: { title: string; description: string }) {

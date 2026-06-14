@@ -47,7 +47,7 @@ export function AppShell({ activePage, onNavigate, sidebarOpen, setSidebarOpen, 
     <div className="app-shell">
       <Sidebar activePage={activePage} onNavigate={onNavigate} open={sidebarOpen} onClose={() => setSidebarOpen(false)} currentUser={currentUser} />
       <main className="main">
-        <TopBar title={t(title)} subtitle={t(subtitle)} apiStatus={apiStatus} currentUser={currentUser} onMenu={() => setSidebarOpen(true)} onPrimaryAction={() => onPrimaryAction?.(activePage)} primaryAction={t(primaryAction)} />
+        <TopBar title={t(title)} subtitle={t(subtitle)} apiStatus={apiStatus} currentUser={currentUser} onMenu={() => setSidebarOpen(true)} onNavigate={onNavigate} onPrimaryAction={() => onPrimaryAction?.(activePage)} primaryAction={t(primaryAction)} />
         <WelcomeStrip currentUser={currentUser} />
         <div className="page">{children}</div>
       </main>
@@ -93,7 +93,6 @@ function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: Sidebar
             );
           })}
         </nav>
-        <PlanCard />
         <UserCard compact user={currentUser} />
       </aside>
       {open && <button className="backdrop" aria-label="Close navigation" onClick={onClose} />}
@@ -101,9 +100,21 @@ function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: Sidebar
   );
 }
 
-function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu, onPrimaryAction }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; currentUser?: { name: string; role: string; email: string }; onMenu: () => void; onPrimaryAction: () => void }) {
+function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu, onNavigate, onPrimaryAction }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; currentUser?: { name: string; role: string; email: string }; onMenu: () => void; onNavigate: (page: PageKey) => void; onPrimaryAction: () => void }) {
   const { language, toggleLanguage, t } = useI18n();
+  const [query, setQuery] = useState("");
   const statusText = apiStatus === "live" ? "Live API" : apiStatus === "loading" ? "Connecting" : "Local fallback";
+  const searchResults = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return [];
+    return navItems
+      .map((item) => {
+        const [pageTitle, pageSubtitle] = pageMeta[item.key];
+        return { ...item, title: t(pageTitle), subtitle: t(pageSubtitle) };
+      })
+      .filter((item) => [item.label, item.title, item.subtitle].some((value) => value.toLowerCase().includes(normalized)))
+      .slice(0, 5);
+  }, [query, t]);
 
   return (
     <header className="topbar">
@@ -113,11 +124,24 @@ function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu
         <p>{subtitle}</p>
       </div>
       <div className="top-actions">
-        <label className="search">
+        <div className={`search ${query ? "has-query" : ""}`} role="search">
           <Search />
-          <input aria-label="Search" placeholder={t("Search anything...")} />
+          <input aria-label="Search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Search anything...")} />
           <kbd><Command />K</kbd>
-        </label>
+          {query && (
+            <div className="search-popover" role="listbox">
+              {searchResults.length ? searchResults.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button key={item.key} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onNavigate(item.key); setQuery(""); }}>
+                    <Icon />
+                    <span><strong>{item.title}</strong><small>{item.subtitle}</small></span>
+                  </button>
+                );
+              }) : <p>{t("No matching pages")}</p>}
+            </div>
+          )}
+        </div>
         <button className="language-toggle" type="button" onClick={toggleLanguage} aria-label="Switch language">
           {language === "vi" ? "VI" : "EN"}
         </button>
@@ -165,18 +189,6 @@ function getFirstName(name: string) {
   const trimmed = name.trim();
   if (!trimmed) return "there";
   return trimmed.split(/\s+/)[0];
-}
-
-function PlanCard() {
-  const { t } = useI18n();
-  return (
-    <section className="plan-card">
-      <div><strong>{t("PRO PLAN")}</strong><span>68 / 100</span></div>
-      <div className="progress"><span style={{ width: "68%" }} /></div>
-      <small>{t("Resets in 13 days")}</small>
-      <button aria-label="Upgrade current pro plan">{t("Upgrade Plan")}</button>
-    </section>
-  );
 }
 
 function UserCard({ compact = false, user }: { compact?: boolean; user?: { name: string; role: string; email: string } }) {

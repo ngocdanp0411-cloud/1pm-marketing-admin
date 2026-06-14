@@ -151,6 +151,7 @@ function SocialFields({ form, campaigns, onChange }: FieldProps & { campaigns: C
       <SelectField label="Channel" value={form.channel} options={["Facebook", "Instagram", "LinkedIn", "X", "TikTok", "YouTube"]} onChange={(value) => onChange("channel", value)} />
       <SelectField label="Status" value={form.status} options={["Draft", "Queued", "Pending Review", "Approved", "Changes Requested", "Published"]} onChange={(value) => onChange("status", value)} />
       <Field label="Scheduled time" type="datetime-local" value={toDatetimeLocal(form.scheduledFor)} onChange={(value) => onChange("scheduledFor", value)} />
+      <Field label="Image / media URL" value={form.mediaUrl} onChange={(value) => onChange("mediaUrl", value)} />
       <Field label="Owner" value={form.owner} onChange={(value) => onChange("owner", value)} />
       <CampaignSelect value={form.campaignId} campaigns={campaigns} onChange={(value) => onChange("campaignId", value)} />
       <Field label="Copy" value={form.copy} onChange={(value) => onChange("copy", value)} multiline full />
@@ -249,6 +250,7 @@ function buildInitialForm(request: WorkflowRequest): Record<string, string> {
     scheduledFor: initial.scheduledFor ?? "",
     owner: initial.owner ?? "Ngọc Dân",
     campaignId: initial.campaignId ?? "",
+    mediaUrl: initial.mediaUrl ?? "",
     copy: initial.copy ?? "",
   });
 }
@@ -263,7 +265,7 @@ function buildPayload(kind: WorkflowKind, form: Record<string, string>) {
     return { ...pick(form, ["title", "type", "date", "status", "stage", "owner", "channel", "summary"]), campaignId: emptyToNull(form.campaignId) };
   }
 
-  return { ...pick(form, ["title", "channel", "status", "owner", "copy"]), scheduledFor: form.scheduledFor || null, campaignId: emptyToNull(form.campaignId) };
+  return { ...pick(form, ["title", "channel", "status", "owner", "copy"]), scheduledFor: form.scheduledFor || null, mediaUrl: emptyToNull(form.mediaUrl), campaignId: emptyToNull(form.campaignId) };
 }
 
 function pick(source: Record<string, string>, keys: string[]) {

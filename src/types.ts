@@ -64,6 +64,7 @@ export interface SocialPost {
   scheduledFor?: string | null;
   owner?: string;
   copy?: string;
+  mediaUrl?: string | null;
   campaignId?: string | null;
   lastPublishError?: string;
   publishedAt?: string | null;
