@@ -1,22 +1,22 @@
 # Product Docs
 
-This directory is intentionally generic and mostly empty in Harness v0.
+These files are the current product contract for 1PM Marketing Admin. Keep them
+smaller than a monolithic spec. Update the affected file whenever behavior
+changes.
 
-When a user provides a project spec, derive smaller product contract files here
-instead of keeping one large spec as the living plan. Name files by the product
-domains that actually exist in that spec, for example `overview.md`,
-`billing.md`, `workflows.md`, `permissions.md`, or `api-conventions.md`.
+## Domain Files
 
-Do not create domain files before the spec just to fill the folder. Empty
-structure is healthier than fake product truth.
+- `overview.md` - product purpose, user, module map, and current boundaries.
+- `operations.md` - operational workflow for campaign/content/social publishing.
+- `api-contract.md` - backend API resources, auth shape, and persistence rules.
 
 ## Update Rule
 
 When behavior changes:
 
 1. Update the affected product doc.
-2. Update or create the story packet.
+2. Update or create a story packet under `docs/stories/`.
 3. Update durable proof status with `scripts/bin/harness-cli story add` or
    `scripts/bin/harness-cli story update`.
-4. Record a decision if the change affects architecture, scope, risk, or a
-   previously settled product rule.
+4. Record a decision if architecture, scope, risk, API shape, data ownership, or
+   validation requirements change meaningfully.

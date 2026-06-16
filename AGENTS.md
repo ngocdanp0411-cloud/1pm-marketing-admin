@@ -1,6 +1,28 @@
 # Agent Instructions
 
-Add project-specific agent instructions here.
+## Project Notes
+
+This repository is the 1PM Marketing Admin web app, not the generic Harness
+source repo.
+
+Current stack:
+
+- React + Vite + TypeScript frontend in `src/`.
+- Node.js stdlib backend in `server/`.
+- JSON persistence in `data/app-state.json`.
+- Railway single-service deploy.
+
+Before product work, read:
+
+- `docs/product/overview.md`
+- `docs/product/operations.md`
+- `docs/product/api-contract.md`
+- `docs/ARCHITECTURE.md`
+- `docs/TEST_MATRIX.md`
+
+Important boundary: personal v1 may use JSON store and dev token auth. Public
+customer use needs real auth, database, tenancy, media storage, and provider
+OAuth/app review.
 
 <!-- HARNESS:BEGIN -->
 ## Harness
