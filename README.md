@@ -36,9 +36,8 @@ Known gaps:
 - No real auth/session system; API uses a dev bearer token.
 - No PostgreSQL or tenant isolation.
 - No background scheduler loop yet; scheduled posts require manual publish.
-- Media binary upload/storage is not implemented.
-- Frontend has a `mediaUrl` field in social post types, but backend validation
-  does not yet persist it through `/api/social-posts`.
+- Media binary upload/storage is not implemented; social posts currently persist
+  image/media references as `mediaUrl`.
 
 ## Tech Stack
 

@@ -70,9 +70,28 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
       title: "TikTok API Smoke",
       channel: "TikTok",
       copy: "Testing the multi-channel publish workflow.",
+      mediaUrl: "https://cdn.1pm.test/tiktok-api-smoke.png",
     });
     assert.equal(tiktokPost.ok, true);
     assert.equal(tiktokPost.data.publishStatus, "Scheduled");
+    assert.equal(tiktokPost.data.mediaUrl, "https://cdn.1pm.test/tiktok-api-smoke.png");
+
+    const patchedTikTokPost = await patchJson(port, `/api/social-posts/${tiktokPost.data.id}`, {
+      mediaUrl: "https://cdn.1pm.test/tiktok-api-smoke-v2.png",
+    });
+    assert.equal(patchedTikTokPost.ok, true);
+    assert.equal(patchedTikTokPost.data.mediaUrl, "https://cdn.1pm.test/tiktok-api-smoke-v2.png");
+
+    const refreshedPosts = await getJson(port, "/api/social-posts", { auth: true });
+    assert.equal(
+      refreshedPosts.data.find((item) => item.id === tiktokPost.data.id)?.mediaUrl,
+      "https://cdn.1pm.test/tiktok-api-smoke-v2.png",
+    );
+    const refreshedBootstrap = await getJson(port, "/api/bootstrap", { auth: true });
+    assert.equal(
+      refreshedBootstrap.data.socialQueue.find((item) => item.id === tiktokPost.data.id)?.mediaUrl,
+      "https://cdn.1pm.test/tiktok-api-smoke-v2.png",
+    );
 
     const failedPublish = await postJson(port, `/api/social-posts/${tiktokPost.data.id}/publish`);
     assert.equal(failedPublish.ok, true);

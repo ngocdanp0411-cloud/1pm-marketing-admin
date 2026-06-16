@@ -262,6 +262,7 @@ function normalizeState(state) {
   nextState.socialQueue = (Array.isArray(state.socialQueue) ? state.socialQueue : seedState.socialQueue).map((post) => ({
     publishStatus: normalizePublishStatus(post.status),
     lastPublishError: "",
+    mediaUrl: null,
     publishedAt: null,
     externalPostId: null,
     ...post,

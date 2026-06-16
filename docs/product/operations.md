@@ -50,6 +50,7 @@ Social posts are stored under `social-posts`. Current publishing fields:
 - `publishStatus`
 - `scheduledFor`
 - `copy`
+- `mediaUrl`
 - `campaignId`
 - `lastPublishError`
 - `publishedAt`
@@ -58,11 +59,8 @@ Social posts are stored under `social-posts`. Current publishing fields:
 Current composer requirements:
 
 - Text input.
-- Image/media URL input in the frontend.
+- Image/media URL input persisted through the backend.
 - Schedule datetime input.
-
-Known gap: backend `server/validators.js` currently does not allow `mediaUrl`,
-so media URL is a product intent that still needs backend persistence.
 
 ## Integration Health
 
@@ -98,7 +96,7 @@ rewriting historical publish evidence.
 
 The next most valuable slice is to make scheduled publishing real:
 
-- Persist media URL or uploaded asset references.
+- Add uploaded asset references for real media files.
 - Add a scheduler/worker loop.
 - Retry failed posts with clear error history.
 - Add Facebook image post support, not just feed text.

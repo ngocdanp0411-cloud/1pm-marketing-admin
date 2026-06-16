@@ -22,7 +22,7 @@ the matrix mechanically.
 | US-002 | Backend API supports health, bootstrap, auth guard, generic CRUD, and JSON persistence. | no | yes | no | no | implemented | `npm run test:api` first smoke test. |
 | US-003 | Multi-channel social operations support integrations, publish states, publish logs, notifications, demo adapters, and Facebook Page Graph API publishing when configured. | no | yes | no | no | implemented | `npm run test:api`; `server/api-smoke.test.js`. |
 | US-004 | Single Railway service builds frontend and serves API/static assets in production. | no | no | no | yes | implemented | `npm run build`; deployed URL health check in `docs/deployment.md`. |
-| US-005 | Social composer supports text, image/media URL, and schedule input end-to-end. | no | no | no | no | in_progress | Frontend UI exists; backend persistence for `mediaUrl` missing. |
+| US-005 | Social composer supports text, image/media URL, and schedule input end-to-end. | no | yes | no | yes | implemented | `npm run build`; `npm run test:api` with media URL assertions. |
 
 ## Evidence Rules
 

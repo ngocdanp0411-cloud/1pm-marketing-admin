@@ -79,8 +79,8 @@ store. New mutable fields must be added to both:
 1. frontend type/interface and UI form, and
 2. `server/validators.js` allowed fields/defaults.
 
-Current known mismatch: `SocialPost.mediaUrl` exists in frontend types and UI
-intent, but backend `social-posts.allowedFields` does not yet include it.
+`SocialPost.mediaUrl` is part of the social post API contract and must remain
+allowed by backend validation when social composer media handling changes.
 
 ## External Provider Rule
 

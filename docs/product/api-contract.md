@@ -41,7 +41,7 @@ Frontend API helpers unwrap `payload.data ?? payload`.
 | campaigns | `GET/POST /api/campaigns`, `GET/PATCH/DELETE /api/campaigns/:id` | Generic CRUD. |
 | content | `GET/POST /api/content`, `GET/PATCH/DELETE /api/content/:id` | Generic CRUD. |
 | calendar | `GET/POST /api/calendar`, `GET/PATCH/DELETE /api/calendar/:id` | Generic CRUD. |
-| social posts | `GET/POST /api/social-posts`, `GET/PATCH/DELETE /api/social-posts/:id` | Generic CRUD plus publish action. |
+| social posts | `GET/POST /api/social-posts`, `GET/PATCH/DELETE /api/social-posts/:id` | Generic CRUD plus publish action. Supports `mediaUrl` as a string or null. |
 | social publish | `POST /api/social-posts/:id/publish` | Updates post, publish log, and notification. |
 | integrations | `GET/PATCH /api/integrations/:id` | Generic list/get also supported. |
 | publish logs | `GET /api/publish-logs` | Read-only append history. |

@@ -2,7 +2,7 @@
 
 ## Status
 
-in_progress
+implemented
 
 ## Lane
 
@@ -10,9 +10,9 @@ normal
 
 ## Product Contract
 
-The social composer should support the operational minimum for a post: text,
-image/media URL, and schedule time. The UI currently captures these fields, but
-the backend must persist `mediaUrl` for the flow to be end-to-end.
+The social composer supports the operational minimum for a post: text,
+image/media URL, and schedule time. The backend persists `mediaUrl` through
+create, update, list, and bootstrap flows.
 
 ## Relevant Product Docs
 
@@ -23,7 +23,7 @@ the backend must persist `mediaUrl` for the flow to be end-to-end.
 
 - `POST /api/social-posts` accepts `mediaUrl`.
 - `PATCH /api/social-posts/:id` accepts `mediaUrl`.
-- Bootstrap returns social posts with `mediaUrl`.
+- Bootstrap/list flows return social posts with `mediaUrl`.
 - Composer-created posts preserve media URL after refresh.
 - API tests cover create/update with `mediaUrl`.
 
@@ -40,3 +40,8 @@ the backend must persist `mediaUrl` for the flow to be end-to-end.
 ## Harness Delta
 
 Backfilled because documentation review found frontend/backend drift.
+
+## Evidence
+
+- `npm run build`
+- `npm run test:api`
