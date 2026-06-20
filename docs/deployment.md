@@ -16,11 +16,19 @@ This app deploys as one Node service:
 
 - `PORT` - provided by Railway
 - `HOST` - optional, defaults to `0.0.0.0`
-- `DEV_API_TOKEN` - optional demo token, defaults to `dev-1pm-token`
+- `APP_ADMIN_PASSWORD` - required for the internal password gate; keep it server-side and use a long random value
 - `DATA_FILE_PATH` - optional JSON state path, defaults to `data/app-state.json`
 - `FACEBOOK_PAGE_ID` - required for real Facebook Page publishing
 - `FACEBOOK_PAGE_ACCESS_TOKEN` - required Page token with `pages_manage_posts`
 - `FACEBOOK_GRAPH_API_BASE_URL` - optional, defaults to `https://graph.facebook.com/v23.0`
+
+Set this Railway variable before deploying the auth gate:
+
+```text
+APP_ADMIN_PASSWORD=your-strong-password
+```
+
+Use a unique long password in Railway; the value above is only a placeholder.
 
 ## Demo Admin
 
@@ -31,6 +39,13 @@ This app deploys as one Node service:
 ## Notes
 
 JSON storage is fine for a public demo. It is not durable production storage; use PostgreSQL before real customer/team use.
+
+The frontend now includes the password login gate. Before deploy, set
+`APP_ADMIN_PASSWORD` in Railway. Existing sessions are invalidated whenever the
+single Node process restarts.
+
+This is a temporary internal password gate for a private admin tool, not full
+multi-user authentication.
 
 ## Multi-Channel Operations Layer
 

@@ -2,6 +2,10 @@ import type { CampaignRow, ChannelIntegration, ContentItem, OperationsNotificati
 
 type ResourceName = "campaigns" | "content" | "social-posts" | "integrations" | "notifications";
 
+export interface AuthStatus {
+  authenticated: boolean;
+}
+
 type ResourceRecordMap = {
   campaigns: CampaignRow;
   content: ContentItem;
@@ -42,6 +46,23 @@ export interface OperationsBootstrap {
 
 export async function fetchOperationsBootstrap(signal?: AbortSignal): Promise<OperationsBootstrap> {
   return apiRequest<OperationsBootstrap>("/api/bootstrap", { signal });
+}
+
+export function fetchAuthStatus(signal?: AbortSignal): Promise<AuthStatus> {
+  return apiRequest<AuthStatus>("/api/auth/me", { signal });
+}
+
+export function loginWithPassword(password: string): Promise<AuthStatus> {
+  return apiRequest<AuthStatus>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
+export function logoutSession(): Promise<AuthStatus> {
+  return apiRequest<AuthStatus>("/api/auth/logout", {
+    method: "POST",
+  });
 }
 
 export function createRecord<TResource extends ResourceName>(
@@ -85,9 +106,9 @@ export function publishSocialPost(id: string): Promise<{
 async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     ...init,
+    credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
-      Authorization: "Bearer dev-1pm-token",
       ...init.headers,
     },
   });

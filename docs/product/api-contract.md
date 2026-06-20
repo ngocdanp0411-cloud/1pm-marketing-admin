@@ -7,14 +7,26 @@ server that serves both API routes and the built frontend assets.
 
 ## Auth
 
-All `/api/*` routes except `/api/health` require:
+Public routes:
 
 ```text
-Authorization: Bearer dev-1pm-token
+GET  /api/health
+POST /api/auth/login
+POST /api/auth/logout
+GET  /api/auth/me
 ```
 
-The token can be changed with `DEV_API_TOKEN`. This is development auth, not a
-production authentication model.
+All other `/api/*` routes require the `onepm_admin_session` HttpOnly cookie.
+`POST /api/auth/login` accepts `{ "password": "..." }` and compares it to
+`APP_ADMIN_PASSWORD`. The cookie uses `HttpOnly`, `SameSite=Lax`, `Path=/`, and
+`Secure` when `NODE_ENV=production`.
+
+Sessions are stored in memory for the current single-instance deployment.
+Server restarts invalidate sessions. Browser requests use same-origin cookie
+credentials and do not contain a frontend authentication secret.
+
+If `APP_ADMIN_PASSWORD` is missing, login and protected routes return
+`503 AUTH_NOT_CONFIGURED`. `/api/health`, logout, and auth status remain usable.
 
 ## Response Shape
 
@@ -37,6 +49,7 @@ Frontend API helpers unwrap `payload.data ?? payload`.
 | Resource | Routes | Notes |
 | --- | --- | --- |
 | health | `GET /api/health` | No auth required. |
+| auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | Public session lifecycle endpoints. |
 | bootstrap | `GET /api/bootstrap` | Returns workspace, current user, metrics, and all app collections. |
 | campaigns | `GET/POST /api/campaigns`, `GET/PATCH/DELETE /api/campaigns/:id` | Generic CRUD. |
 | content | `GET/POST /api/content`, `GET/PATCH/DELETE /api/content/:id` | Generic CRUD. |

@@ -1,4 +1,4 @@
-import { allowedOrigins, devAuthToken, jsonBodyLimitBytes } from "./config.js";
+import { allowedOrigins, jsonBodyLimitBytes } from "./config.js";
 
 export class HttpError extends Error {
   constructor(statusCode, code, message, details) {
@@ -14,6 +14,12 @@ export function sendJson(req, res, statusCode, data) {
   applyCommonHeaders(req, res);
   res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify({ ok: true, data }, null, 2));
+}
+
+export function sendRawJson(req, res, statusCode, data) {
+  applyCommonHeaders(req, res);
+  res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
+  res.end(JSON.stringify(data, null, 2));
 }
 
 export function sendError(req, res, error) {
@@ -49,13 +55,6 @@ export function handlePreflight(req, res) {
   applyCommonHeaders(req, res);
   res.writeHead(204);
   res.end();
-}
-
-export function requireDevAuth(req) {
-  const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${devAuthToken}`) {
-    throw new HttpError(401, "UNAUTHORIZED", "Missing or invalid bearer token.");
-  }
 }
 
 export async function parseJsonBody(req) {

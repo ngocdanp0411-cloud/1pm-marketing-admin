@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { AppShell, Donut, LineChart, MetricCard, Panel, SparkLine, StatusPill } from "./components";
 import { ActionWorkflowModal, ApprovalActions, RowActions, type WorkflowKind, type WorkflowRequest } from "./action-workflow";
+import { AuthGate } from "./auth-gate";
 import {
   aiTemplates,
   assetCards,
@@ -76,6 +77,14 @@ const calendarMetrics: Metric[] = [
 ];
 
 function App() {
+  return (
+    <AuthGate>
+      {({ logout, logoutBusy }) => <DashboardApp onLogout={logout} logoutBusy={logoutBusy} />}
+    </AuthGate>
+  );
+}
+
+function DashboardApp({ onLogout, logoutBusy }: { onLogout: () => Promise<void>; logoutBusy: boolean }) {
   const { t } = useI18n();
   const [activePage, setActivePage] = useState<PageKey>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -349,7 +358,7 @@ function App() {
   }
 
   return (
-    <AppShell activePage={activePage} onNavigate={setActivePage} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} apiStatus={apiStatus} currentUser={bootstrap?.currentUser} onPrimaryAction={handlePrimaryAction}>
+    <AppShell activePage={activePage} onNavigate={setActivePage} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} apiStatus={apiStatus} currentUser={bootstrap?.currentUser} onLogout={onLogout} logoutBusy={logoutBusy} onPrimaryAction={handlePrimaryAction}>
       {apiStatus === "fallback" && <div className="connection-banner" role="status"><AlertCircle /><span><strong>{t("Operations API offline.")}</strong> {t("Data is read-only until the backend reconnects.")}</span><button onClick={() => loadBootstrap()}>{t("Retry")}</button></div>}
       {activePage === "overview" && <OverviewPage metrics={liveOverviewMetrics} notifications={liveNotifications} />}
       {activePage === "content-studio" && <ContentStudioPage items={liveContentItems} campaigns={liveCampaignRows} pendingAction={pendingAction} onOpenWorkflow={openWorkflow} onApproveContent={updateContentStatus} />}

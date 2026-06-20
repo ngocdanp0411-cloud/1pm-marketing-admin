@@ -1,10 +1,10 @@
-import { HttpError, parseJsonBody, requireDevAuth, sendJson } from "./http-helpers.js";
+import { HttpError, parseJsonBody, sendJson, sendRawJson } from "./http-helpers.js";
 import { serveSpaFallback, serveStaticAsset } from "./static-files.js";
 import { validateMutation } from "./validators.js";
 
 const resourceRouteNames = new Set(["campaigns", "content", "calendar", "social-posts", "integrations", "publish-logs", "notifications"]);
 
-export function createRouter({ store, port }) {
+export function createRouter({ store, port, auth }) {
   return async function route(req, res) {
     const method = req.method || "GET";
     const url = new URL(req.url || "/", "http://localhost");
@@ -32,6 +32,13 @@ export function createRouter({ store, port }) {
       return;
     }
 
+    if (url.pathname.startsWith("/api/auth/")) {
+      await handleAuthRoute({ req, res, method, url, auth });
+      return;
+    }
+
+    auth.requireAuthenticated(req);
+
     if (url.pathname === "/api") {
       sendJson(req, res, 200, {
         service: "1pm-marketing-command-center-api",
@@ -40,8 +47,6 @@ export function createRouter({ store, port }) {
       });
       return;
     }
-
-    requireDevAuth(req);
 
     if (url.pathname === "/api/bootstrap" && method === "GET") {
       const payload = await store.getBootstrap(port);
@@ -143,6 +148,33 @@ export function createRouter({ store, port }) {
 
     throw new HttpError(405, "METHOD_NOT_ALLOWED", `Method ${method} is not supported for this route.`);
   };
+}
+
+async function handleAuthRoute({ req, res, method, url, auth }) {
+  if (url.pathname === "/api/auth/login" && method === "POST") {
+    const payload = await parseJsonBody(req);
+    if (typeof payload.password !== "string") {
+      throw new HttpError(400, "INVALID_BODY", 'Field "password" must be a string.');
+    }
+
+    const session = auth.login(payload.password);
+    res.setHeader("Set-Cookie", session.cookie);
+    sendRawJson(req, res, 200, { authenticated: true });
+    return;
+  }
+
+  if (url.pathname === "/api/auth/logout" && method === "POST") {
+    res.setHeader("Set-Cookie", auth.logout(req));
+    sendRawJson(req, res, 200, { authenticated: false });
+    return;
+  }
+
+  if (url.pathname === "/api/auth/me" && method === "GET") {
+    sendRawJson(req, res, 200, { authenticated: auth.isAuthenticated(req) });
+    return;
+  }
+
+  throw new HttpError(404, "NOT_FOUND", "Auth route not found.");
 }
 
 function enforceResourceMethod(resourceName, method, recordId) {

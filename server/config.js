@@ -6,7 +6,8 @@ const projectRoot = path.resolve(serverDir, "..");
 
 export const defaultPort = 8787;
 export const serverHost = process.env.HOST || "0.0.0.0";
-export const devAuthToken = process.env.DEV_API_TOKEN || "dev-1pm-token";
+export const appAdminPassword = process.env.APP_ADMIN_PASSWORD || "";
+export const isProduction = process.env.NODE_ENV === "production";
 export const jsonBodyLimitBytes = 1024 * 1024;
 export const dataFilePath = process.env.DATA_FILE_PATH || path.join(projectRoot, "data", "app-state.json");
 export const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173/";

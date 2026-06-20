@@ -7,7 +7,7 @@ import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import test from "node:test";
 
-const token = "test-1pm-token";
+const adminPassword = "test-admin-password-strong";
 
 test("backend API supports health, auth, bootstrap, and campaign CRUD", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "1pm-api-test-"));
@@ -22,8 +22,10 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     cwd: process.cwd(),
     env: {
       ...process.env,
+      NODE_ENV: "production",
       PORT: String(port),
-      DEV_API_TOKEN: token,
+      APP_ADMIN_PASSWORD: adminPassword,
+      DEV_API_TOKEN: "legacy-test-token",
       DATA_FILE_PATH: dataFilePath,
       FACEBOOK_GRAPH_API_BASE_URL: `http://127.0.0.1:${facebookGraphPort}`,
       FACEBOOK_PAGE_ID: "fb-page-smoke",
@@ -42,7 +44,31 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     const unauthorized = await fetch(`http://127.0.0.1:${port}/api/campaigns`);
     assert.equal(unauthorized.status, 401);
 
-    const bootstrap = await getJson(port, "/api/bootstrap", { auth: true });
+    const meBeforeLogin = await getJson(port, "/api/auth/me");
+    assert.deepEqual(meBeforeLogin, { authenticated: false });
+
+    const legacyBearerOnly = await fetch(`http://127.0.0.1:${port}/api/bootstrap`, {
+      headers: { Authorization: "Bearer legacy-test-token" },
+    });
+    assert.equal(legacyBearerOnly.status, 401);
+
+    const wrongLogin = await login(port, "wrong-password");
+    assert.equal(wrongLogin.response.status, 401);
+    assert.equal(wrongLogin.payload.error.code, "INVALID_CREDENTIALS");
+
+    const successfulLogin = await login(port, adminPassword);
+    assert.equal(successfulLogin.response.status, 200);
+    assert.deepEqual(successfulLogin.payload, { authenticated: true });
+    assert.match(successfulLogin.setCookie, /HttpOnly/i);
+    assert.match(successfulLogin.setCookie, /SameSite=Lax/i);
+    assert.match(successfulLogin.setCookie, /Path=\//i);
+    assert.match(successfulLogin.setCookie, /Secure/i);
+
+    const api = createApiClient(port, successfulLogin.cookie);
+    const meAfterLogin = await api.get("/api/auth/me");
+    assert.deepEqual(meAfterLogin, { authenticated: true });
+
+    const bootstrap = await api.get("/api/bootstrap");
     assert.equal(bootstrap.ok, true);
     assert.equal(bootstrap.data.workspace.apiPort, port);
     assert.ok(Array.isArray(bootstrap.data.campaigns));
@@ -50,7 +76,7 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     assert.ok(Array.isArray(bootstrap.data.publishLogs));
     assert.ok(Array.isArray(bootstrap.data.notifications));
 
-    const created = await postJson(port, "/api/campaigns", {
+    const created = await api.post("/api/campaigns", {
       name: "API Smoke Campaign",
       channel: "Email",
       status: "Draft",
@@ -58,15 +84,15 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     assert.equal(created.ok, true);
     assert.match(created.data.id, /^campaign-/);
 
-    const patched = await patchJson(port, `/api/campaigns/${created.data.id}`, {
+    const patched = await api.patch(`/api/campaigns/${created.data.id}`, {
       status: "Active",
     });
     assert.equal(patched.data.status, "Active");
 
-    const deleted = await deleteJson(port, `/api/campaigns/${created.data.id}`);
+    const deleted = await api.delete(`/api/campaigns/${created.data.id}`);
     assert.equal(deleted.data.deleted, true);
 
-    const tiktokPost = await postJson(port, "/api/social-posts", {
+    const tiktokPost = await api.post("/api/social-posts", {
       title: "TikTok API Smoke",
       channel: "TikTok",
       copy: "Testing the multi-channel publish workflow.",
@@ -76,24 +102,24 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     assert.equal(tiktokPost.data.publishStatus, "Scheduled");
     assert.equal(tiktokPost.data.mediaUrl, "https://cdn.1pm.test/tiktok-api-smoke.png");
 
-    const patchedTikTokPost = await patchJson(port, `/api/social-posts/${tiktokPost.data.id}`, {
+    const patchedTikTokPost = await api.patch(`/api/social-posts/${tiktokPost.data.id}`, {
       mediaUrl: "https://cdn.1pm.test/tiktok-api-smoke-v2.png",
     });
     assert.equal(patchedTikTokPost.ok, true);
     assert.equal(patchedTikTokPost.data.mediaUrl, "https://cdn.1pm.test/tiktok-api-smoke-v2.png");
 
-    const refreshedPosts = await getJson(port, "/api/social-posts", { auth: true });
+    const refreshedPosts = await api.get("/api/social-posts");
     assert.equal(
       refreshedPosts.data.find((item) => item.id === tiktokPost.data.id)?.mediaUrl,
       "https://cdn.1pm.test/tiktok-api-smoke-v2.png",
     );
-    const refreshedBootstrap = await getJson(port, "/api/bootstrap", { auth: true });
+    const refreshedBootstrap = await api.get("/api/bootstrap");
     assert.equal(
       refreshedBootstrap.data.socialQueue.find((item) => item.id === tiktokPost.data.id)?.mediaUrl,
       "https://cdn.1pm.test/tiktok-api-smoke-v2.png",
     );
 
-    const failedPublish = await postJson(port, `/api/social-posts/${tiktokPost.data.id}/publish`);
+    const failedPublish = await api.post(`/api/social-posts/${tiktokPost.data.id}/publish`);
     assert.equal(failedPublish.ok, true);
     assert.equal(failedPublish.data.post.status, "Failed");
     assert.equal(failedPublish.data.log.status, "failed");
@@ -102,7 +128,7 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     const tiktokIntegration = bootstrap.data.integrations.find((item) => item.provider === "tiktok");
     assert.ok(tiktokIntegration);
 
-    const connectedIntegration = await patchJson(port, `/api/integrations/${tiktokIntegration.id}`, {
+    const connectedIntegration = await api.patch(`/api/integrations/${tiktokIntegration.id}`, {
       status: "connected",
       tokenHealth: "healthy",
       pageId: "tiktok-demo-page",
@@ -110,20 +136,20 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     });
     assert.equal(connectedIntegration.data.status, "connected");
 
-    const successfulPublish = await postJson(port, `/api/social-posts/${tiktokPost.data.id}/publish`);
+    const successfulPublish = await api.post(`/api/social-posts/${tiktokPost.data.id}/publish`);
     assert.equal(successfulPublish.ok, true);
     assert.equal(successfulPublish.data.post.status, "Published");
     assert.equal(successfulPublish.data.log.status, "published");
     assert.match(successfulPublish.data.post.externalPostId, /^demo-tiktok-/);
 
-    const facebookPost = await postJson(port, "/api/social-posts", {
+    const facebookPost = await api.post("/api/social-posts", {
       title: "Facebook API Smoke",
       channel: "Facebook Page",
       copy: "Publishing through the Facebook Graph API.",
     });
     assert.equal(facebookPost.ok, true);
 
-    const facebookPublish = await postJson(port, `/api/social-posts/${facebookPost.data.id}/publish`);
+    const facebookPublish = await api.post(`/api/social-posts/${facebookPost.data.id}/publish`);
     assert.equal(facebookPublish.ok, true);
     assert.equal(facebookPublish.data.post.status, "Published");
     assert.equal(facebookPublish.data.log.status, "published");
@@ -133,10 +159,10 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     assert.equal(graphRequests[0].body.get("message"), "Publishing through the Facebook Graph API.");
     assert.equal(graphRequests[0].body.get("access_token"), "fb-page-token-smoke");
 
-    const logs = await getJson(port, "/api/publish-logs", { auth: true });
+    const logs = await api.get("/api/publish-logs");
     assert.ok(logs.data.some((item) => item.postId === tiktokPost.data.id && item.status === "published"));
 
-    const logMutation = await postJson(port, "/api/publish-logs", {
+    const logMutation = await api.post("/api/publish-logs", {
       postId: tiktokPost.data.id,
       channel: "TikTok",
       status: "published",
@@ -144,20 +170,36 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     assert.equal(logMutation.ok, false);
     assert.equal(logMutation.error.code, "METHOD_NOT_ALLOWED");
 
-    const notifications = await getJson(port, "/api/notifications", { auth: true });
+    const notifications = await api.get("/api/notifications");
     assert.ok(notifications.data.some((item) => item.relatedId === tiktokPost.data.id));
 
     const notification = notifications.data.find((item) => item.relatedId === tiktokPost.data.id);
-    const patchedNotification = await patchJson(port, `/api/notifications/${notification.id}`, {
+    const patchedNotification = await api.patch(`/api/notifications/${notification.id}`, {
       status: "read",
     });
     assert.equal(patchedNotification.data.status, "read");
 
-    const invalidNotificationPatch = await patchJson(port, `/api/notifications/${notification.id}`, {
+    const invalidNotificationPatch = await api.patch(`/api/notifications/${notification.id}`, {
       title: "Tamper",
     });
     assert.equal(invalidNotificationPatch.ok, false);
     assert.equal(invalidNotificationPatch.error.code, "INVALID_BODY");
+
+    const logout = await requestJsonWithResponse(port, "/api/auth/logout", {
+      method: "POST",
+      cookie: successfulLogin.cookie,
+    });
+    assert.equal(logout.response.status, 200);
+    assert.deepEqual(logout.payload, { authenticated: false });
+    assert.match(logout.response.headers.get("set-cookie") ?? "", /Max-Age=0/i);
+
+    const meAfterLogout = await getJson(port, "/api/auth/me", { cookie: successfulLogin.cookie });
+    assert.deepEqual(meAfterLogout, { authenticated: false });
+
+    const protectedAfterLogout = await fetch(`http://127.0.0.1:${port}/api/bootstrap`, {
+      headers: { Cookie: successfulLogin.cookie },
+    });
+    assert.equal(protectedAfterLogout.status, 401);
   } finally {
     const exitPromise = server.exitCode === null ? once(server, "exit") : Promise.resolve();
     server.kill("SIGTERM");
@@ -175,8 +217,9 @@ test("facebook publishing fails clearly without Graph API credentials", async ()
     cwd: process.cwd(),
     env: {
       ...process.env,
+      NODE_ENV: "test",
       PORT: String(port),
-      DEV_API_TOKEN: token,
+      APP_ADMIN_PASSWORD: adminPassword,
       DATA_FILE_PATH: dataFilePath,
       FACEBOOK_PAGE_ID: "",
       FACEBOOK_PAGE_ACCESS_TOKEN: "",
@@ -186,18 +229,62 @@ test("facebook publishing fails clearly without Graph API credentials", async ()
 
   try {
     await waitForServer(server, port);
+    const successfulLogin = await login(port, adminPassword);
+    const api = createApiClient(port, successfulLogin.cookie);
 
-    const facebookPost = await postJson(port, "/api/social-posts", {
+    const facebookPost = await api.post("/api/social-posts", {
       title: "Facebook Missing Credentials",
       channel: "Facebook Page",
       copy: "This should not publish without credentials.",
     });
 
-    const facebookPublish = await postJson(port, `/api/social-posts/${facebookPost.data.id}/publish`);
+    const facebookPublish = await api.post(`/api/social-posts/${facebookPost.data.id}/publish`);
     assert.equal(facebookPublish.ok, true);
     assert.equal(facebookPublish.data.post.status, "Failed");
     assert.equal(facebookPublish.data.log.status, "failed");
     assert.match(facebookPublish.data.post.lastPublishError, /FACEBOOK_PAGE_ID/);
+  } finally {
+    const exitPromise = server.exitCode === null ? once(server, "exit") : Promise.resolve();
+    server.kill("SIGTERM");
+    await exitPromise.catch(() => {});
+    await rm(tempDir, { force: true, recursive: true });
+  }
+});
+
+test("production rejects protected routes when admin password is not configured", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "1pm-api-test-"));
+  const port = 22087 + Math.floor(Math.random() * 1000);
+  const dataFilePath = path.join(tempDir, "app-state.json");
+  const server = spawn(process.execPath, ["server/index.js"], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      NODE_ENV: "production",
+      PORT: String(port),
+      APP_ADMIN_PASSWORD: "",
+      DATA_FILE_PATH: dataFilePath,
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  try {
+    await waitForServer(server, port);
+
+    const health = await getJson(port, "/api/health");
+    assert.equal(health.ok, true);
+
+    const me = await getJson(port, "/api/auth/me");
+    assert.deepEqual(me, { authenticated: false });
+
+    const protectedRoute = await requestJsonWithResponse(port, "/api/bootstrap", {
+      method: "GET",
+    });
+    assert.equal(protectedRoute.response.status, 503);
+    assert.equal(protectedRoute.payload.error.code, "AUTH_NOT_CONFIGURED");
+
+    const loginAttempt = await login(port, "any-password");
+    assert.equal(loginAttempt.response.status, 503);
+    assert.equal(loginAttempt.payload.error.code, "AUTH_NOT_CONFIGURED");
   } finally {
     const exitPromise = server.exitCode === null ? once(server, "exit") : Promise.resolve();
     server.kill("SIGTERM");
@@ -235,22 +322,27 @@ function getJson(port, pathname, options = {}) {
   return requestJson(port, pathname, { method: "GET", ...options });
 }
 
-function postJson(port, pathname, body) {
-  return requestJson(port, pathname, { method: "POST", auth: true, body });
+function postJson(port, pathname, body, options = {}) {
+  return requestJson(port, pathname, { method: "POST", body, ...options });
 }
 
-function patchJson(port, pathname, body) {
-  return requestJson(port, pathname, { method: "PATCH", auth: true, body });
+function patchJson(port, pathname, body, options = {}) {
+  return requestJson(port, pathname, { method: "PATCH", body, ...options });
 }
 
-function deleteJson(port, pathname) {
-  return requestJson(port, pathname, { method: "DELETE", auth: true });
+function deleteJson(port, pathname, options = {}) {
+  return requestJson(port, pathname, { method: "DELETE", ...options });
 }
 
 async function requestJson(port, pathname, options) {
+  const result = await requestJsonWithResponse(port, pathname, options);
+  return result.payload;
+}
+
+async function requestJsonWithResponse(port, pathname, options) {
   const headers = {};
-  if (options.auth) {
-    headers.Authorization = `Bearer ${token}`;
+  if (options.cookie) {
+    headers.Cookie = options.cookie;
   }
 
   if (options.body) {
@@ -263,7 +355,33 @@ async function requestJson(port, pathname, options) {
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
-  return response.json();
+  return {
+    response,
+    payload: await response.json(),
+  };
+}
+
+async function login(port, password) {
+  const result = await requestJsonWithResponse(port, "/api/auth/login", {
+    method: "POST",
+    body: { password },
+  });
+  const setCookie = result.response.headers.get("set-cookie") ?? "";
+
+  return {
+    ...result,
+    setCookie,
+    cookie: setCookie.split(";")[0],
+  };
+}
+
+function createApiClient(port, cookie) {
+  return {
+    get: (pathname) => getJson(port, pathname, { cookie }),
+    post: (pathname, body = {}) => postJson(port, pathname, body, { cookie }),
+    patch: (pathname, body) => patchJson(port, pathname, body, { cookie }),
+    delete: (pathname) => deleteJson(port, pathname, { cookie }),
+  };
 }
 
 function createMockFacebookGraphServer(requests) {

@@ -14,8 +14,8 @@ states, and fast recovery from failed work.
 
 - Owner/admin: Ngọc Dân, `ngocdanp0411@gmail.com`.
 - Initial use case: personal project operations before public customer launch.
-- Future use case: agency or SaaS-style public customer version after auth,
-  database, tenancy, billing, and provider app review are added.
+- Future use case: agency or SaaS-style public customer version after multi-user
+  auth, database, tenancy, billing, and provider app review are added.
 
 ## Current Navigation
 
@@ -50,7 +50,8 @@ topbar. The selected language is stored in `localStorage` under
 
 ## Public Launch Blockers
 
-- Real authentication and session management.
+- Multi-user authentication/authorization and account recovery.
+- Shared durable session storage for multi-instance deployment.
 - Workspace/user isolation.
 - PostgreSQL or another durable production datastore.
 - Real media storage and upload pipeline.

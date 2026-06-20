@@ -20,9 +20,10 @@ Railway runs the same Node service for API and static frontend.
 | Layer | Current implementation |
 | --- | --- |
 | Browser UI | React 18 + TypeScript + CSS in `src/`. |
-| API client | `src/operations-api.ts`, relative `/api/*`, dev bearer token. |
+| API client | `src/operations-api.ts`, relative `/api/*`, same-origin cookie credentials. |
 | Server | Node.js built-in HTTP modules in `server/`. |
 | Router | `server/router.js`, generic resource routing plus custom social publish route. |
+| Auth | `server/password-auth.js`, one admin password and in-memory cookie sessions. |
 | Validation | `server/validators.js`. |
 | Persistence | `server/state-store.js` with JSON file at `data/app-state.json`. |
 | Provider adapter | `server/facebook-publisher.js` for Facebook Page Graph API. |
@@ -39,6 +40,7 @@ Core files:
   shared visual components.
 - `src/action-workflow.tsx` owns campaign/content/social create/edit/duplicate
   modal behavior.
+- `src/auth-gate.tsx` checks the cookie session and owns login/logout UI state.
 - `src/operations-api.ts` owns API calls.
 - `src/types.ts` owns shared frontend types.
 - `src/i18n.tsx` owns Vietnamese/English translation.
@@ -58,6 +60,7 @@ Core files:
   publish transitions, logs, and notifications.
 - `server/validators.js` is the mutation boundary and allowed-field contract.
 - `server/http-helpers.js` owns JSON parsing, auth, CORS, and error envelopes.
+- `server/password-auth.js` owns password comparison, session tokens, cookie parsing, and cookie serialization.
 - `server/static-files.js` serves built frontend assets and SPA fallback.
 - `server/seed-*.js` seed initial state.
 - `server/facebook-publisher.js` is the only real external provider adapter.
@@ -97,7 +100,7 @@ remain clearly marked as demo adapters until each has:
 
 Before public customer use, replace or add:
 
-- real auth/session middleware,
+- multi-user auth/session storage and authorization,
 - database-backed storage,
 - workspace/team tenancy,
 - media upload/object storage,

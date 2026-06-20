@@ -2,12 +2,14 @@ import http from "node:http";
 
 import { resolvePort, serverHost } from "./config.js";
 import { handlePreflight, sendError } from "./http-helpers.js";
+import { PasswordAuth } from "./password-auth.js";
 import { createRouter } from "./router.js";
 import { AppStateStore } from "./state-store.js";
 
 const port = resolvePort(process.env.PORT);
 const host = serverHost;
 const store = new AppStateStore();
+const auth = new PasswordAuth();
 
 try {
   await store.init();
@@ -17,7 +19,7 @@ try {
   process.exit(1);
 }
 
-const route = createRouter({ store, port });
+const route = createRouter({ store, port, auth });
 
 const server = http.createServer(async (req, res) => {
   try {

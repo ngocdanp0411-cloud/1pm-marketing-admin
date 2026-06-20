@@ -15,6 +15,5 @@
 | --- | --- | --- | --- |
 | US-006 | Background scheduler for queued posts | Scheduled posts should publish at their scheduled time, not only by manual button. | high-risk |
 | US-007 | Facebook image post support | Real Page publishing currently posts text to `/feed`; marketing posts need image support. | normal |
-| US-008 | Replace dev auth with real auth/session | Required before public or sensitive use. | high-risk |
 | US-009 | Move JSON store to PostgreSQL | Required before public customer/team use. | high-risk |
 | US-010 | Extract page modules from `src/app.tsx` | App file is large and should be split before more UI work piles up. | normal |

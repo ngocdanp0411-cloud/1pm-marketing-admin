@@ -9,15 +9,18 @@ PORT=8788 node server/index.js
 
 Default port is `8787`. Set `PORT` to override it.
 
-Dev auth token for all non-health API routes:
+Set the internal admin password before using protected API routes:
 
-```text
-Authorization: Bearer dev-1pm-token
+```bash
+APP_ADMIN_PASSWORD="use-a-long-random-password" node server/index.js
 ```
 
 Core endpoints:
 
 - `GET /api/health`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
 - `GET /api/bootstrap`
 - `GET|POST /api/campaigns`
 - `GET|PATCH|DELETE /api/campaigns/:id`
@@ -40,7 +43,10 @@ Persistence:
 Behavior notes:
 
 - CORS allows common localhost Vite origins
-- `Authorization` is required for every `/api/*` route except `/api/health`
+- `/api/health` and `/api/auth/*` are public
+- Every other `/api/*` route requires the HttpOnly admin session cookie
+- Login cookies use `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` in production
+- Production protected routes fail closed with `AUTH_NOT_CONFIGURED` when `APP_ADMIN_PASSWORD` is missing
 - JSON request bodies are limited to 1 MB
 - Error responses use a consistent shape: `{ "ok": false, "error": { ... } }`
 - Multi-channel publishing updates JSON state, publish logs, and notifications. Facebook Page publishing can call the real Graph API when configured; Instagram, Threads, TikTok, LinkedIn, and X remain demo operations adapters.
@@ -55,7 +61,8 @@ Facebook Page publishing:
 
 Production swap notes:
 
-- Replace the dev bearer token with real auth middleware
+- Add the frontend login flow before enabling the password gate for normal UI use
+- Replace the single-password/in-memory session model for multi-user or multi-instance use
 - Replace the JSON file store with a database-backed repository layer
 - Tighten CORS origins to deployed frontend hosts only
 - Add OAuth/app-review-backed adapters for each remaining social network before claiming real external publishing

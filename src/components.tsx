@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bell, ChevronDown, Command, Menu, Plus, Search } from "lucide-react";
+import { Bell, ChevronDown, Command, LogOut, Menu, Plus, Search } from "lucide-react";
 import { pageMeta, navItems } from "./data";
 import { useI18n } from "./i18n";
 import type { Metric, PageKey } from "./types";
@@ -22,6 +22,8 @@ interface ShellProps {
   setSidebarOpen: (open: boolean) => void;
   apiStatus: "live" | "fallback" | "loading";
   onPrimaryAction?: (page: PageKey) => void;
+  onLogout: () => Promise<void>;
+  logoutBusy: boolean;
   currentUser?: {
     name: string;
     role: string;
@@ -30,7 +32,7 @@ interface ShellProps {
   children: React.ReactNode;
 }
 
-export function AppShell({ activePage, onNavigate, sidebarOpen, setSidebarOpen, apiStatus, onPrimaryAction, currentUser, children }: ShellProps) {
+export function AppShell({ activePage, onNavigate, sidebarOpen, setSidebarOpen, apiStatus, onPrimaryAction, onLogout, logoutBusy, currentUser, children }: ShellProps) {
   const { t } = useI18n();
   const [title, subtitle] = pageMeta[activePage];
   const primaryAction = activePage === "brand-assets"
@@ -47,7 +49,7 @@ export function AppShell({ activePage, onNavigate, sidebarOpen, setSidebarOpen, 
     <div className="app-shell">
       <Sidebar activePage={activePage} onNavigate={onNavigate} open={sidebarOpen} onClose={() => setSidebarOpen(false)} currentUser={currentUser} />
       <main className="main">
-        <TopBar title={t(title)} subtitle={t(subtitle)} apiStatus={apiStatus} currentUser={currentUser} onMenu={() => setSidebarOpen(true)} onNavigate={onNavigate} onPrimaryAction={() => onPrimaryAction?.(activePage)} primaryAction={t(primaryAction)} />
+        <TopBar title={t(title)} subtitle={t(subtitle)} apiStatus={apiStatus} currentUser={currentUser} onMenu={() => setSidebarOpen(true)} onNavigate={onNavigate} onLogout={onLogout} logoutBusy={logoutBusy} onPrimaryAction={() => onPrimaryAction?.(activePage)} primaryAction={t(primaryAction)} />
         <WelcomeStrip currentUser={currentUser} />
         <div className="page">{children}</div>
       </main>
@@ -100,7 +102,7 @@ function Sidebar({ activePage, onNavigate, open, onClose, currentUser }: Sidebar
   );
 }
 
-function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu, onNavigate, onPrimaryAction }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; currentUser?: { name: string; role: string; email: string }; onMenu: () => void; onNavigate: (page: PageKey) => void; onPrimaryAction: () => void }) {
+function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu, onNavigate, onLogout, logoutBusy, onPrimaryAction }: { title: string; subtitle: string; primaryAction: string; apiStatus: "live" | "fallback" | "loading"; currentUser?: { name: string; role: string; email: string }; onMenu: () => void; onNavigate: (page: PageKey) => void; onLogout: () => Promise<void>; logoutBusy: boolean; onPrimaryAction: () => void }) {
   const { language, toggleLanguage, t } = useI18n();
   const [query, setQuery] = useState("");
   const statusText = apiStatus === "live" ? "Live API" : apiStatus === "loading" ? "Connecting" : "Local fallback";
@@ -148,6 +150,9 @@ function TopBar({ title, subtitle, primaryAction, apiStatus, currentUser, onMenu
         <span className={`api-badge ${apiStatus}`}>{t(statusText)}</span>
         <button className="icon-btn notification" aria-label="Notifications"><Bell /><span /></button>
         <UserCard user={currentUser} />
+        <button className="icon-btn logout-button" disabled={logoutBusy} title="Logout" aria-label="Logout" onClick={() => void onLogout()}>
+          <LogOut />
+        </button>
         <button className="primary-btn" aria-label={`${primaryAction} menu`} onClick={onPrimaryAction}><Plus />{primaryAction}<ChevronDown /></button>
       </div>
     </header>

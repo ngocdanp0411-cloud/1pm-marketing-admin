@@ -33,11 +33,20 @@ Current real operations:
 
 Known gaps:
 
-- No real auth/session system; API uses a dev bearer token.
+- Authentication is a single-admin password/cookie gate, not a multi-user
+  identity or role system.
+- Sessions are in memory and are not suitable for multi-instance or multi-user use.
 - No PostgreSQL or tenant isolation.
 - No background scheduler loop yet; scheduled posts require manual publish.
 - Media binary upload/storage is not implemented; social posts currently persist
   image/media references as `mediaUrl`.
+
+The current login is a temporary internal password gate for a private admin
+tool, not full multi-user authentication. Configure it on Railway with:
+
+```text
+APP_ADMIN_PASSWORD=your-strong-password
+```
 
 ## Tech Stack
 
