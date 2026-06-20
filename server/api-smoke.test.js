@@ -41,11 +41,16 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     assert.equal(health.ok, true);
     assert.equal(health.data.status, "ok");
 
-    const unauthorized = await fetch(`http://127.0.0.1:${port}/api/campaigns`);
-    assert.equal(unauthorized.status, 401);
+    const serviceMetadata = await getJson(port, "/api");
+    assert.equal(serviceMetadata.ok, true);
+    assert.equal(serviceMetadata.data.health, "/api/health");
 
     const meBeforeLogin = await getJson(port, "/api/auth/me");
-    assert.deepEqual(meBeforeLogin, { authenticated: false });
+    assert.deepEqual(meBeforeLogin, { ok: true, data: { authenticated: false } });
+
+    const unauthorized = await requestJsonWithResponse(port, "/api/bootstrap", { method: "GET" });
+    assert.equal(unauthorized.response.status, 401);
+    assert.equal(unauthorized.payload.error.message, "Not authenticated.");
 
     const legacyBearerOnly = await fetch(`http://127.0.0.1:${port}/api/bootstrap`, {
       headers: { Authorization: "Bearer legacy-test-token" },
@@ -58,7 +63,7 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
 
     const successfulLogin = await login(port, adminPassword);
     assert.equal(successfulLogin.response.status, 200);
-    assert.deepEqual(successfulLogin.payload, { authenticated: true });
+    assert.deepEqual(successfulLogin.payload, { ok: true, data: { authenticated: true } });
     assert.match(successfulLogin.setCookie, /HttpOnly/i);
     assert.match(successfulLogin.setCookie, /SameSite=Lax/i);
     assert.match(successfulLogin.setCookie, /Path=\//i);
@@ -66,7 +71,7 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
 
     const api = createApiClient(port, successfulLogin.cookie);
     const meAfterLogin = await api.get("/api/auth/me");
-    assert.deepEqual(meAfterLogin, { authenticated: true });
+    assert.deepEqual(meAfterLogin, { ok: true, data: { authenticated: true } });
 
     const bootstrap = await api.get("/api/bootstrap");
     assert.equal(bootstrap.ok, true);
@@ -190,16 +195,18 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
       cookie: successfulLogin.cookie,
     });
     assert.equal(logout.response.status, 200);
-    assert.deepEqual(logout.payload, { authenticated: false });
+    assert.deepEqual(logout.payload, { ok: true, data: { authenticated: false } });
     assert.match(logout.response.headers.get("set-cookie") ?? "", /Max-Age=0/i);
 
     const meAfterLogout = await getJson(port, "/api/auth/me", { cookie: successfulLogin.cookie });
-    assert.deepEqual(meAfterLogout, { authenticated: false });
+    assert.deepEqual(meAfterLogout, { ok: true, data: { authenticated: false } });
 
-    const protectedAfterLogout = await fetch(`http://127.0.0.1:${port}/api/bootstrap`, {
-      headers: { Cookie: successfulLogin.cookie },
+    const protectedAfterLogout = await requestJsonWithResponse(port, "/api/bootstrap", {
+      method: "GET",
+      cookie: successfulLogin.cookie,
     });
-    assert.equal(protectedAfterLogout.status, 401);
+    assert.equal(protectedAfterLogout.response.status, 401);
+    assert.equal(protectedAfterLogout.payload.error.message, "Not authenticated.");
   } finally {
     const exitPromise = server.exitCode === null ? once(server, "exit") : Promise.resolve();
     server.kill("SIGTERM");
@@ -274,7 +281,7 @@ test("production rejects protected routes when admin password is not configured"
     assert.equal(health.ok, true);
 
     const me = await getJson(port, "/api/auth/me");
-    assert.deepEqual(me, { authenticated: false });
+    assert.deepEqual(me, { ok: true, data: { authenticated: false } });
 
     const protectedRoute = await requestJsonWithResponse(port, "/api/bootstrap", {
       method: "GET",

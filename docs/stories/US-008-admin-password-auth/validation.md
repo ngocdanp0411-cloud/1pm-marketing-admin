@@ -32,8 +32,11 @@ npm run test:api
 
 ## Acceptance Evidence
 
-- `npm run build` passed on 2026-06-19.
-- `npm run test:api` passed 3/3 on 2026-06-19.
-- Integration proof covers wrong password, login cookie flags, authenticated
-  access, legacy bearer rejection, logout revocation, and missing production
+- `npm run build` passed on 2026-06-20.
+- `npm run test:api` passed 3/3 on 2026-06-20.
+- Integration proof covers public service metadata and auth routes, unauthenticated
+  status, wrong password, login cookie flags, authenticated bootstrap access,
+  bearer-token bypass prevention, logout revocation, and missing production
   configuration.
+- Auth endpoints execute before the protected-route guard and use the standard
+  `{ "ok": true, "data": ... }` response envelope.

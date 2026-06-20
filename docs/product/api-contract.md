@@ -10,6 +10,7 @@ server that serves both API routes and the built frontend assets.
 Public routes:
 
 ```text
+GET  /api
 GET  /api/health
 POST /api/auth/login
 POST /api/auth/logout
@@ -27,6 +28,10 @@ credentials and do not contain a frontend authentication secret.
 
 If `APP_ADMIN_PASSWORD` is missing, login and protected routes return
 `503 AUTH_NOT_CONFIGURED`. `/api/health`, logout, and auth status remain usable.
+
+`GET /api/auth/me` always returns `200` with the standard response envelope and
+an `authenticated` boolean. Unauthenticated protected routes return `401` with
+the message `Not authenticated.` No bearer token is required for app routes.
 
 ## Response Shape
 
@@ -48,6 +53,7 @@ Frontend API helpers unwrap `payload.data ?? payload`.
 
 | Resource | Routes | Notes |
 | --- | --- | --- |
+| service metadata | `GET /api` | No auth required. |
 | health | `GET /api/health` | No auth required. |
 | auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | Public session lifecycle endpoints. |
 | bootstrap | `GET /api/bootstrap` | Returns workspace, current user, metrics, and all app collections. |

@@ -16,12 +16,6 @@ export function sendJson(req, res, statusCode, data) {
   res.end(JSON.stringify({ ok: true, data }, null, 2));
 }
 
-export function sendRawJson(req, res, statusCode, data) {
-  applyCommonHeaders(req, res);
-  res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
-  res.end(JSON.stringify(data, null, 2));
-}
-
 export function sendError(req, res, error) {
   applyCommonHeaders(req, res);
 

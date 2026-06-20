@@ -45,7 +45,7 @@ export class PasswordAuth {
     this.assertConfigured();
 
     if (!this.isAuthenticated(req)) {
-      throw new HttpError(401, "UNAUTHORIZED", "Authentication required.");
+      throw new HttpError(401, "UNAUTHORIZED", "Not authenticated.");
     }
   }
 

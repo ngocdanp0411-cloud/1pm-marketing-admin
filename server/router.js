@@ -1,4 +1,4 @@
-import { HttpError, parseJsonBody, sendJson, sendRawJson } from "./http-helpers.js";
+import { HttpError, parseJsonBody, sendJson } from "./http-helpers.js";
 import { serveSpaFallback, serveStaticAsset } from "./static-files.js";
 import { validateMutation } from "./validators.js";
 
@@ -10,7 +10,7 @@ export function createRouter({ store, port, auth }) {
     const url = new URL(req.url || "/", "http://localhost");
     const pathSegments = url.pathname.split("/").filter(Boolean);
 
-    if (!url.pathname.startsWith("/api/")) {
+    if (url.pathname !== "/api" && !url.pathname.startsWith("/api/")) {
       if (await serveStaticAsset(req, res)) {
         return;
       }
@@ -32,14 +32,7 @@ export function createRouter({ store, port, auth }) {
       return;
     }
 
-    if (url.pathname.startsWith("/api/auth/")) {
-      await handleAuthRoute({ req, res, method, url, auth });
-      return;
-    }
-
-    auth.requireAuthenticated(req);
-
-    if (url.pathname === "/api") {
+    if (url.pathname === "/api" && method === "GET") {
       sendJson(req, res, 200, {
         service: "1pm-marketing-command-center-api",
         health: "/api/health",
@@ -47,6 +40,13 @@ export function createRouter({ store, port, auth }) {
       });
       return;
     }
+
+    if (url.pathname.startsWith("/api/auth/")) {
+      await handleAuthRoute({ req, res, method, url, auth });
+      return;
+    }
+
+    auth.requireAuthenticated(req);
 
     if (url.pathname === "/api/bootstrap" && method === "GET") {
       const payload = await store.getBootstrap(port);
@@ -159,18 +159,18 @@ async function handleAuthRoute({ req, res, method, url, auth }) {
 
     const session = auth.login(payload.password);
     res.setHeader("Set-Cookie", session.cookie);
-    sendRawJson(req, res, 200, { authenticated: true });
+    sendJson(req, res, 200, { authenticated: true });
     return;
   }
 
   if (url.pathname === "/api/auth/logout" && method === "POST") {
     res.setHeader("Set-Cookie", auth.logout(req));
-    sendRawJson(req, res, 200, { authenticated: false });
+    sendJson(req, res, 200, { authenticated: false });
     return;
   }
 
   if (url.pathname === "/api/auth/me" && method === "GET") {
-    sendRawJson(req, res, 200, { authenticated: auth.isAuthenticated(req) });
+    sendJson(req, res, 200, { authenticated: auth.isAuthenticated(req) });
     return;
   }
 

@@ -17,6 +17,7 @@ APP_ADMIN_PASSWORD="use-a-long-random-password" node server/index.js
 
 Core endpoints:
 
+- `GET /api`
 - `GET /api/health`
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
@@ -43,8 +44,10 @@ Persistence:
 Behavior notes:
 
 - CORS allows common localhost Vite origins
-- `/api/health` and `/api/auth/*` are public
+- `/api`, `/api/health`, and `/api/auth/*` are public
 - Every other `/api/*` route requires the HttpOnly admin session cookie
+- Browser/API app routes do not require the legacy bearer token
+- Unauthenticated protected routes return `401 Not authenticated.`
 - Login cookies use `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` in production
 - Production protected routes fail closed with `AUTH_NOT_CONFIGURED` when `APP_ADMIN_PASSWORD` is missing
 - JSON request bodies are limited to 1 MB
@@ -61,7 +64,6 @@ Facebook Page publishing:
 
 Production swap notes:
 
-- Add the frontend login flow before enabling the password gate for normal UI use
 - Replace the single-password/in-memory session model for multi-user or multi-instance use
 - Replace the JSON file store with a database-backed repository layer
 - Tighten CORS origins to deployed frontend hosts only
