@@ -14,18 +14,21 @@ This app deploys as one Node service:
 
 ## Official Deploy Path
 
-Use Railway CLI from this repository after linking it to the production
-project/service:
+Use GitHub Auto Deploy:
 
-```bash
-railway status
-railway up
+```text
+local code -> git push origin main -> Railway GitHub Auto Deploy
 ```
 
-This repository defines CLI deployment as the official path because production
-does not currently follow GitHub `main` reliably. A Git push alone is not
-production proof. If GitHub auto-deploy is enabled later, update this document
-only after verifying that a pushed commit becomes the active Railway deployment.
+In the Railway dashboard, service `web` must use:
+
+- Source repository: `ngocdanp0411-cloud/1pm-marketing-admin`
+- Source branch: `main`
+- Automatic deployment trigger: enabled for pushes to `main`
+
+`railway up` is an emergency/manual fallback only. Do not use it for normal
+releases because it can create production artifacts that are not traceable to
+the expected GitHub deployment trigger.
 
 ## Environment Variables
 
@@ -67,10 +70,12 @@ multi-user authentication.
 1. Set `APP_ADMIN_PASSWORD` in the Railway production environment.
 2. Run `npm run build`.
 3. Run `npm run test:api`.
-4. Confirm `git status --short` prints nothing.
+4. Run `git status` and confirm only the intended release changes exist.
 5. Confirm the intended release with `git log --oneline -1`.
-6. Run `railway status`, then `railway up`.
-7. Verify the production auth contract using the commands below.
+6. Run `git push origin main`.
+7. In Railway Deployments, confirm the latest deployment shows the pushed
+   commit hash/message and completes successfully.
+8. Verify the production auth contract using the commands below.
 
 ## Production Auth Verification
 
@@ -104,6 +109,14 @@ curl -i -b /tmp/1pm-cookies.txt \
 ```
 
 Delete `/tmp/1pm-cookies.txt` after verification.
+
+## Troubleshooting Stale Auth
+
+If production returns `Missing or invalid bearer token.`, Railway is serving an
+old artifact. Do not patch the auth code again. In Railway service `web`, check
+that Source points to `ngocdanp0411-cloud/1pm-marketing-admin`, branch `main`,
+and that pushes trigger deployments. Then confirm the Deployments tab shows the
+latest GitHub commit hash/message.
 
 ## Multi-Channel Operations Layer
 

@@ -43,4 +43,5 @@ npm run test:api
 - Pre-deploy production check on 2026-06-20 returned the retired
   `Missing or invalid bearer token.` response for `/api/auth/me`, proving the
   active Railway artifact was older than `origin/main`. Production cookie-auth
-  verification remains required immediately after the next `railway up`.
+  verification remains required after GitHub Auto Deploy publishes the latest
+  `main` commit.

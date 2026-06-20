@@ -106,16 +106,16 @@ Production is currently deployed on Railway:
 
 https://web-production-2556d0.up.railway.app
 
-The official release path for this repository is Railway CLI deployment from
-the linked project:
+The official release path is GitHub Auto Deploy:
 
-```bash
-railway status
-railway up
+```text
+local code -> git push origin main -> Railway GitHub Auto Deploy
 ```
 
-Pushing `main` updates GitHub but is not treated as a production deployment
-unless Railway is later configured and verified for GitHub auto-deploy.
+Railway service `web` must be connected to
+`ngocdanp0411-cloud/1pm-marketing-admin` on branch `main`, with automatic
+deployments enabled. `railway up` is reserved for emergency/manual releases and
+is not the normal release path.
 
 See `docs/deployment.md` for deploy variables and platform notes.
 

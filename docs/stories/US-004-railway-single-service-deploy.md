@@ -25,8 +25,11 @@ the Node backend to serve both static assets and `/api/*`.
 - Built frontend assets are served from `dist/`.
 - SPA fallback works for browser pages.
 - `/api/health` returns `status: ok` in production.
-- Releases use `railway status` and `railway up` from the linked repository.
-- GitHub pushes are not treated as deploy proof unless auto-deploy is verified.
+- Releases push `main` to GitHub and use Railway GitHub Auto Deploy.
+- Railway service `web` is connected to
+  `ngocdanp0411-cloud/1pm-marketing-admin`, branch `main`.
+- Release proof is the latest commit hash/message in Railway Deployments.
+- `railway up` is an emergency/manual fallback, not the normal release path.
 
 ## Validation
 
