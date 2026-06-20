@@ -21,7 +21,7 @@ validation, and JSON file persistence for personal v1 operations.
 ## Acceptance Criteria
 
 - `GET /api/health` works without auth.
-- Other `/api/*` routes require `Authorization: Bearer <token>`.
+- Other `/api/*` routes require the HttpOnly admin session cookie.
 - `GET /api/bootstrap` returns workspace, user, metrics, and app collections.
 - Campaign CRUD supports create, patch, delete.
 - Invalid mutation fields are rejected.

@@ -12,6 +12,21 @@ This app deploys as one Node service:
 - `npm start` runs `server/index.js`
 - The backend serves both `/api/*` and the static frontend from `dist/`
 
+## Official Deploy Path
+
+Use Railway CLI from this repository after linking it to the production
+project/service:
+
+```bash
+railway status
+railway up
+```
+
+This repository defines CLI deployment as the official path because production
+does not currently follow GitHub `main` reliably. A Git push alone is not
+production proof. If GitHub auto-deploy is enabled later, update this document
+only after verifying that a pushed commit becomes the active Railway deployment.
+
 ## Environment Variables
 
 - `PORT` - provided by Railway
@@ -46,6 +61,49 @@ single Node process restarts.
 
 This is a temporary internal password gate for a private admin tool, not full
 multi-user authentication.
+
+## Release Checklist
+
+1. Set `APP_ADMIN_PASSWORD` in the Railway production environment.
+2. Run `npm run build`.
+3. Run `npm run test:api`.
+4. Confirm `git status --short` prints nothing.
+5. Confirm the intended release with `git log --oneline -1`.
+6. Run `railway status`, then `railway up`.
+7. Verify the production auth contract using the commands below.
+
+## Production Auth Verification
+
+Public auth status must return `200` with `authenticated: false` before login:
+
+```bash
+curl -i https://web-production-2556d0.up.railway.app/api/auth/me
+```
+
+Protected bootstrap must return `401 Not authenticated.` before login:
+
+```bash
+curl -i https://web-production-2556d0.up.railway.app/api/bootstrap
+```
+
+Login must set the `onepm_admin_session` cookie:
+
+```bash
+curl -i -c /tmp/1pm-cookies.txt \
+  -H "Content-Type: application/json" \
+  -X POST \
+  https://web-production-2556d0.up.railway.app/api/auth/login \
+  --data '{"password":"<password>"}'
+```
+
+The saved cookie must allow protected bootstrap access:
+
+```bash
+curl -i -b /tmp/1pm-cookies.txt \
+  https://web-production-2556d0.up.railway.app/api/bootstrap
+```
+
+Delete `/tmp/1pm-cookies.txt` after verification.
 
 ## Multi-Channel Operations Layer
 

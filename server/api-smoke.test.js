@@ -25,7 +25,6 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
       NODE_ENV: "production",
       PORT: String(port),
       APP_ADMIN_PASSWORD: adminPassword,
-      DEV_API_TOKEN: "legacy-test-token",
       DATA_FILE_PATH: dataFilePath,
       FACEBOOK_GRAPH_API_BASE_URL: `http://127.0.0.1:${facebookGraphPort}`,
       FACEBOOK_PAGE_ID: "fb-page-smoke",
@@ -45,17 +44,25 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     assert.equal(serviceMetadata.ok, true);
     assert.equal(serviceMetadata.data.health, "/api/health");
 
+    const preflight = await fetch(`http://127.0.0.1:${port}/api/auth/login`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Content-Type",
+      },
+    });
+    assert.equal(preflight.status, 204);
+    assert.equal(preflight.headers.get("access-control-allow-origin"), "http://localhost:5173");
+    assert.equal(preflight.headers.get("access-control-allow-credentials"), "true");
+    assert.equal(preflight.headers.get("access-control-allow-headers"), "Content-Type");
+
     const meBeforeLogin = await getJson(port, "/api/auth/me");
     assert.deepEqual(meBeforeLogin, { ok: true, data: { authenticated: false } });
 
     const unauthorized = await requestJsonWithResponse(port, "/api/bootstrap", { method: "GET" });
     assert.equal(unauthorized.response.status, 401);
     assert.equal(unauthorized.payload.error.message, "Not authenticated.");
-
-    const legacyBearerOnly = await fetch(`http://127.0.0.1:${port}/api/bootstrap`, {
-      headers: { Authorization: "Bearer legacy-test-token" },
-    });
-    assert.equal(legacyBearerOnly.status, 401);
 
     const wrongLogin = await login(port, "wrong-password");
     assert.equal(wrongLogin.response.status, 401);

@@ -88,5 +88,6 @@ mutations. It rejects:
 
 ## CORS
 
-CORS allows common local Vite origins only. Production origin hardening is still
-needed before public launch.
+CORS allows common local Vite origins with credentials and `Content-Type`.
+Production is same-origin because the Node service serves both the frontend and
+API. Production origin hardening is still needed before public launch.

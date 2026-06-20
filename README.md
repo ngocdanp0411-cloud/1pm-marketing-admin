@@ -77,6 +77,8 @@ npm run dev:full
 ```
 
 Default backend port is `8787`. The Vite frontend runs on `5173`.
+Set `APP_ADMIN_PASSWORD` for local backend work; there is no built-in password
+fallback.
 
 ## Validation
 
@@ -103,6 +105,17 @@ scripts/bin/harness-cli query matrix
 Production is currently deployed on Railway:
 
 https://web-production-2556d0.up.railway.app
+
+The official release path for this repository is Railway CLI deployment from
+the linked project:
+
+```bash
+railway status
+railway up
+```
+
+Pushing `main` updates GitHub but is not treated as a production deployment
+unless Railway is later configured and verified for GitHub auto-deploy.
 
 See `docs/deployment.md` for deploy variables and platform notes.
 

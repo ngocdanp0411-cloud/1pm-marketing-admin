@@ -36,7 +36,11 @@ npm run test:api
 - `npm run test:api` passed 3/3 on 2026-06-20.
 - Integration proof covers public service metadata and auth routes, unauthenticated
   status, wrong password, login cookie flags, authenticated bootstrap access,
-  bearer-token bypass prevention, logout revocation, and missing production
-  configuration.
+  protected CRUD, logout revocation, credential-aware local CORS, and missing
+  production configuration.
 - Auth endpoints execute before the protected-route guard and use the standard
   `{ "ok": true, "data": ... }` response envelope.
+- Pre-deploy production check on 2026-06-20 returned the retired
+  `Missing or invalid bearer token.` response for `/api/auth/me`, proving the
+  active Railway artifact was older than `origin/main`. Production cookie-auth
+  verification remains required immediately after the next `railway up`.

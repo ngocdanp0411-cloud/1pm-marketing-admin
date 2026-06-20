@@ -46,7 +46,8 @@ Behavior notes:
 - CORS allows common localhost Vite origins
 - `/api`, `/api/health`, and `/api/auth/*` are public
 - Every other `/api/*` route requires the HttpOnly admin session cookie
-- Browser/API app routes do not require the legacy bearer token
+- Browser/API app routes authenticate only with the admin session cookie
+- Allowed local cross-origin requests support credentials and `Content-Type`
 - Unauthenticated protected routes return `401 Not authenticated.`
 - Login cookies use `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` in production
 - Production protected routes fail closed with `AUTH_NOT_CONFIGURED` when `APP_ADMIN_PASSWORD` is missing

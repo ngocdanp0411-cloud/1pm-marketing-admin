@@ -41,5 +41,5 @@ Tradeoffs:
 
 ## Follow-Up
 
-- Build frontend login UI in Task 1B.
+- Frontend login UI is implemented and uses the cookie session.
 - Move sessions to shared durable storage if Railway scales beyond one instance.

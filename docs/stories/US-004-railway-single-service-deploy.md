@@ -25,6 +25,8 @@ the Node backend to serve both static assets and `/api/*`.
 - Built frontend assets are served from `dist/`.
 - SPA fallback works for browser pages.
 - `/api/health` returns `status: ok` in production.
+- Releases use `railway status` and `railway up` from the linked repository.
+- GitHub pushes are not treated as deploy proof unless auto-deploy is verified.
 
 ## Validation
 
