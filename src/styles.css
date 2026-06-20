@@ -252,10 +252,42 @@ kbd { color: var(--muted); display: inline-flex; align-items: center; gap: 2px; 
 .field input, .field select, .field textarea { width: 100%; min-height: 42px; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,.2); padding: 10px 12px; outline: none; }
 .field textarea { min-height: 100px; resize: vertical; }
 .field select option { background: #15172d; color: #f4f5ff; }
+.upload-placeholder > label { min-height: 70px; display: grid; place-items: center; border: 1px dashed var(--border-strong); border-radius: 8px; padding: 14px; color: var(--muted); background: rgba(130,148,255,.05); text-align: center; }
+.upload-placeholder input { display: none; }
 .form-error { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: #ffb2b2; }
 .spin { animation: spin .8s linear infinite; }
 
 .content-layout, .detail-layout, .settings-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 350px); gap: 14px; align-items: start; }
+.manual-library-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.manual-library-head p { max-width: 680px; line-height: 1.5; }
+.manual-library-head .primary-btn { flex: 0 0 auto; }
+.manual-content-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 12px; }
+.manual-content-card { min-width: 0; display: grid; grid-template-columns: 128px minmax(0, 1fr); overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,.025); }
+.manual-content-thumb { min-height: 210px; overflow: hidden; background: linear-gradient(135deg, #171830, #2d3268); }
+.manual-content-thumb img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.manual-content-thumb.placeholder { display: grid; place-items: center; align-content: center; gap: 8px; color: var(--green); text-align: center; }
+.manual-content-thumb.placeholder svg { width: 28px; height: 28px; }
+.manual-content-thumb.placeholder span { max-width: 100px; color: #dfe3ff; overflow-wrap: anywhere; }
+.manual-content-body { min-width: 0; display: grid; align-content: start; gap: 10px; padding: 14px; }
+.manual-content-title { min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.manual-content-title > div { min-width: 0; }
+.manual-content-title strong, .manual-content-title small { display: block; min-width: 0; overflow-wrap: anywhere; }
+.manual-content-title small { margin-top: 4px; }
+.manual-content-body > p { display: -webkit-box; overflow: hidden; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.manual-content-meta { display: flex; gap: 8px 14px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
+.manual-content-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.manual-content-meta svg { width: 14px; height: 14px; }
+.manual-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.manual-tags span { max-width: 100%; padding: 4px 7px; border-radius: 5px; color: #cfd5ff; background: rgba(130,148,255,.12); font-size: 11px; overflow-wrap: anywhere; }
+.manual-card-actions { display: grid; grid-template-columns: auto minmax(110px, 1fr) auto; gap: 8px; margin-top: auto; }
+.manual-card-actions button, .manual-card-actions select { min-width: 0; min-height: 34px; border: 1px solid var(--border); border-radius: 7px; padding: 0 9px; background: rgba(255,255,255,.035); color: #e5e8ff; }
+.manual-card-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.manual-card-actions button.danger { color: #ffc3c8; }
+.manual-card-actions select option { background: #15172d; }
+.manual-empty { min-height: 180px; display: grid; place-items: center; align-content: center; gap: 9px; border: 1px dashed var(--border); border-radius: 8px; text-align: center; }
+.manual-empty > svg { width: 30px; height: 30px; color: var(--green); }
+.manual-empty .primary-btn { margin-top: 4px; }
+.studio-layout { margin-top: 14px; }
 .right-rail { display: grid; gap: 14px; align-content: start; }
 .board-tools { display: flex; justify-content: flex-end; gap: 8px; margin: -4px 0 12px; flex-wrap: wrap; }
 .kanban-panel { overflow: visible; }
@@ -293,6 +325,9 @@ kbd { color: var(--muted); display: inline-flex; align-items: center; gap: 2px; 
 
 .toolbar { justify-content: flex-end; gap: 10px; margin-bottom: 14px; }
 .toolbar button { display: inline-flex; align-items: center; gap: 8px; }
+.calendar-toolbar { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 14px; }
+.calendar-toolbar strong { min-width: 180px; text-align: center; }
+.calendar-toolbar button { min-height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 7px; background: rgba(255,255,255,.035); }
 .calendar-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); gap: 14px; align-items: start; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(92px, 1fr)); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 .calendar-grid b, .calendar-grid button { min-height: 72px; padding: 8px; border: 0; border-right: 1px solid rgba(255,255,255,.07); border-bottom: 1px solid rgba(255,255,255,.07); background: rgba(18, 20, 40, .55); text-align: left; }
@@ -309,6 +344,11 @@ kbd { color: var(--muted); display: inline-flex; align-items: center; gap: 2px; 
 .day-item-meta { display: grid; justify-items: end; gap: 8px; max-width: 150px; }
 .day-item-meta time { color: var(--muted); font-size: 13px; line-height: 1.25; text-align: right; white-space: normal; }
 .day-item-meta .pill { max-width: 100%; white-space: normal; text-align: center; justify-content: center; }
+.calendar-content-item { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 12px; align-items: start; padding: 14px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,.03); text-align: left; }
+.calendar-content-item:hover { background: rgba(130,148,255,.1); }
+.calendar-content-item .day-item-main small { grid-column: 2; }
+.calendar-empty { min-height: 180px; display: grid; place-items: center; align-content: center; gap: 8px; text-align: center; }
+.calendar-empty svg { width: 30px; height: 30px; color: var(--green); }
 .stacked-bar { height: 8px; display: flex; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.12); margin: 12px 0; }
 .stacked-bar span:first-child { width: 72%; background: var(--green); }
 .stacked-bar span:nth-child(2) { width: 14%; background: var(--amber); }
@@ -538,6 +578,8 @@ kbd { color: var(--muted); display: inline-flex; align-items: center; gap: 2px; 
   .calendar-grid button { min-height: 86px; padding: 5px; }
   .calendar-grid em { font-size: 10px; padding: 4px; }
   .asset-grid, .type-grid, .asset-row, .form-grid { grid-template-columns: 1fr; }
+  .manual-library-head { align-items: stretch; flex-direction: column; }
+  .manual-library-head .primary-btn { width: 100%; }
 }
 
 @media (max-width: 560px) {
@@ -584,6 +626,11 @@ kbd { color: var(--muted); display: inline-flex; align-items: center; gap: 2px; 
   .queue-list article > button { width: 100%; }
   .queue-list .pill { justify-self: start; }
   .channel-strip, .queue-actions { grid-template-columns: 1fr; }
+  .manual-content-card { grid-template-columns: 1fr; }
+  .manual-content-thumb { min-height: 170px; max-height: 240px; }
+  .manual-card-actions { grid-template-columns: 1fr; }
+  .calendar-content-item { grid-template-columns: 1fr; }
+  .calendar-content-item .day-item-meta { justify-items: start; max-width: none; }
 }
 
 @media (max-width: 420px) {

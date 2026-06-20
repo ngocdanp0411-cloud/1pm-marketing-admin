@@ -47,6 +47,8 @@ import {
   teamMembers,
 } from "./data";
 import { useI18n } from "./i18n";
+import { ManualContentCalendar } from "./manual-content-calendar";
+import { ManualContentLibrary } from "./manual-content-library";
 import { createRecord, deleteRecord, fetchOperationsBootstrap, publishSocialPost, updateRecord, type OperationsBootstrap } from "./operations-api";
 import type { CampaignRow, ChannelIntegration, ContentItem, Metric, OperationsNotification, PageKey, PublishLog, SocialPost } from "./types";
 
@@ -239,12 +241,35 @@ function DashboardApp({ onLogout, logoutBusy }: { onLogout: () => Promise<void>;
     try {
       const record = await updateRecord("content", item.id, { status, stage });
       setBootstrap((current) => upsertBootstrapRecord(current, "contentItems", record));
-      showNotice(status === "Approved" ? "Content approved." : "Changes requested.");
+      showNotice(`Content marked ${status.toLowerCase()}.`);
       loadBootstrap();
     } catch (error) {
       showNotice(error instanceof Error ? error.message : "Could not update content status.");
     } finally {
       setPendingAction("");
+    }
+  }
+
+  async function deleteContentItem(item: ContentItem) {
+    if (apiStatus !== "live") {
+      showNotice("Operations API is offline. Deleting is temporarily unavailable.");
+      return;
+    }
+
+    if (!item.id) {
+      showNotice("This content item has no backend id yet.");
+      return;
+    }
+
+    if (!window.confirm(`Delete "${item.title}"?`)) return;
+
+    try {
+      await deleteRecord("content", item.id);
+      setBootstrap((current) => removeBootstrapRecord(current, "contentItems", item.id as string));
+      showNotice("Content item deleted.");
+      loadBootstrap();
+    } catch (error) {
+      showNotice(error instanceof Error ? error.message : "Could not delete content item.");
     }
   }
 
@@ -361,8 +386,8 @@ function DashboardApp({ onLogout, logoutBusy }: { onLogout: () => Promise<void>;
     <AppShell activePage={activePage} onNavigate={setActivePage} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} apiStatus={apiStatus} currentUser={bootstrap?.currentUser} onLogout={onLogout} logoutBusy={logoutBusy} onPrimaryAction={handlePrimaryAction}>
       {apiStatus === "fallback" && <div className="connection-banner" role="status"><AlertCircle /><span><strong>{t("Operations API offline.")}</strong> {t("Data is read-only until the backend reconnects.")}</span><button onClick={() => loadBootstrap()}>{t("Retry")}</button></div>}
       {activePage === "overview" && <OverviewPage metrics={liveOverviewMetrics} notifications={liveNotifications} />}
-      {activePage === "content-studio" && <ContentStudioPage items={liveContentItems} campaigns={liveCampaignRows} pendingAction={pendingAction} onOpenWorkflow={openWorkflow} onApproveContent={updateContentStatus} />}
-      {activePage === "content-calendar" && <ContentCalendarPage />}
+      {activePage === "content-studio" && <ContentStudioPage items={liveContentItems} campaigns={liveCampaignRows} pendingAction={pendingAction} onOpenWorkflow={openWorkflow} onApproveContent={updateContentStatus} onDeleteContent={deleteContentItem} />}
+      {activePage === "content-calendar" && <ContentCalendarPage items={liveContentItems} onOpenWorkflow={openWorkflow} />}
       {activePage === "ai-generator" && <AiGeneratorPage />}
       {activePage === "campaigns" && <CampaignsPage rows={liveCampaignRows} onOpenWorkflow={openWorkflow} onDeleteCampaign={deleteCampaign} />}
       {activePage === "analytics" && <AnalyticsPage />}
@@ -511,12 +536,22 @@ function OverviewPage({ metrics, notifications }: { metrics: Metric[]; notificat
   );
 }
 
-function ContentStudioPage({ items, campaigns, pendingAction, onOpenWorkflow, onApproveContent }: { items: ContentItem[]; campaigns: CampaignRow[]; pendingAction: string; onOpenWorkflow: (kind: WorkflowKind, mode?: WorkflowRequest["mode"], initial?: WorkflowRequest["initial"], defaults?: WorkflowRequest["defaults"]) => void; onApproveContent: (item: ContentItem, status: string, stage: string) => void }) {
+function ContentStudioPage({ items, campaigns, pendingAction, onOpenWorkflow, onApproveContent, onDeleteContent }: { items: ContentItem[]; campaigns: CampaignRow[]; pendingAction: string; onOpenWorkflow: (kind: WorkflowKind, mode?: WorkflowRequest["mode"], initial?: WorkflowRequest["initial"], defaults?: WorkflowRequest["defaults"]) => void; onApproveContent: (item: ContentItem, status: string, stage: string) => void; onDeleteContent: (item: ContentItem) => void }) {
   const groupedItems = groupContentItems(items);
+  const createManualContent = () => onOpenWorkflow("content", "create", undefined, { source: "manual", status: "Draft", stage: "Drafting" });
 
   return (
     <>
       <MetricGrid metrics={studioMetrics} />
+      <ManualContentLibrary
+        items={items}
+        campaigns={campaigns}
+        pendingAction={pendingAction}
+        onCreate={createManualContent}
+        onEdit={(item) => onOpenWorkflow("content", "edit", item)}
+        onDelete={onDeleteContent}
+        onStatusChange={(item, status) => onApproveContent(item, status, contentStageForStatus(status))}
+      />
       <div className="content-layout studio-layout">
         <div>
           <Panel title="Content Workflow" action="Board" className="kanban-panel">
@@ -538,16 +573,12 @@ function ContentStudioPage({ items, campaigns, pendingAction, onOpenWorkflow, on
   );
 }
 
-function ContentCalendarPage() {
-  const [selectedDay, setSelectedDay] = useState(14);
+function ContentCalendarPage({ items, onOpenWorkflow }: { items: ContentItem[]; onOpenWorkflow: (kind: WorkflowKind, mode?: WorkflowRequest["mode"], initial?: WorkflowRequest["initial"], defaults?: WorkflowRequest["defaults"]) => void }) {
   return (
     <>
       <Toolbar buttons={["Today", "Channel: All", "Campaign: All", "Team: All", "Month", "Week"]} />
       <MetricGrid metrics={calendarMetrics} />
-      <div className="calendar-layout">
-        <Panel title="May 2025" className="calendar-panel"><CalendarGrid selectedDay={selectedDay} onSelect={setSelectedDay} /></Panel>
-        <Panel title={`Wednesday, May ${selectedDay}, 2025`} className="day-panel"><DayDetails /></Panel>
-      </div>
+      <ManualContentCalendar items={items} onEdit={(item) => onOpenWorkflow("content", "edit", item)} />
       <div className="grid four compact-row">
         <Panel title="Campaign Timeline"><Bars /></Panel>
         <Panel title="Upcoming Deadlines"><DeadlineList /></Panel>
@@ -850,15 +881,6 @@ function CollaboratorsPanel() {
   return <Panel title="Collaborators" action="View all"><List items={["Ethan Parker Content Strategist", "Sophia Bennett Copywriter", "Noah Williams Designer"]} /><button className="wide-btn">Invite Collaborators</button></Panel>;
 }
 
-function CalendarGrid({ selectedDay, onSelect }: { selectedDay: number; onSelect: (day: number) => void }) {
-  const events = new Map([[5, "Case Study"], [6, "Instagram Post"], [7, "Email Campaign"], [9, "YouTube Video"], [12, "Newsletter"], [13, "Carousel Post"], [14, "Blog Post"], [15, "Product Update"], [16, "LinkedIn Article"], [19, "Instagram Reel"], [21, "Email Drip"], [23, "YouTube Short"], [26, "Blog Post"], [27, "Instagram Post"], [28, "Newsletter"], [29, "LinkedIn Post"], [30, "YouTube Video"]]);
-  return <div className="calendar-grid">{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => <b key={d}>{d}</b>)}{Array.from({ length: 35 }, (_, i) => i < 3 ? 27 + i : i - 2).map((day, i) => <button aria-label={`Select May ${day}`} className={`${day === selectedDay ? "selected" : ""} ${day > 24 && i < 4 ? "muted" : ""}`} key={`${day}-${i}`} onClick={() => onSelect(day)}><span>{day}</span>{events.has(day) && <em>{events.get(day)}<small>{day % 2 ? "10:00 AM" : "9:00 AM"}</small></em>}</button>)}</div>;
-}
-
-function DayDetails() {
-  return <div className="day-details"><h3>3 Items Scheduled</h3>{["Blog Post", "Story", "Product Update Email"].map((item, i) => <article key={item}><div className="day-item-main"><FileText /><strong>{item}</strong><p>{["How AI is Shaping the Future of Marketing", "Behind the Scenes: Team Day", "May Product Updates & Improvements"][i]}</p></div><div className="day-item-meta"><time>{["10:00 AM", "4:00 PM", "9:00 AM (May 15)"][i]}</time><StatusPill text={i === 2 ? "Pending Approval" : "Scheduled"} /></div></article>)}<h3>Approval Status</h3><div className="stacked-bar"><span /><span /><span /></div><button className="wide-btn">View Day Details</button></div>;
-}
-
 function Bars() {
   return <div className="bars">{["Product Launch Campaign", "Summer Promo", "Brand Awareness Initiative"].map((item, i) => <p key={item}><span>{item}</span><em style={{ width: `${42 + i * 14}%` }} /></p>)}</div>;
 }
@@ -1082,6 +1104,12 @@ function TopPostPanel() {
 function toLocalDatetimeInput(date: Date) {
   const offset = date.getTimezoneOffset();
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
+}
+
+function contentStageForStatus(status: string) {
+  if (status === "Published" || status === "Ready") return "Ready to Publish";
+  if (status === "Scheduled") return "Review";
+  return "Drafting";
 }
 
 function EmptyState({ title, description }: { title: string; description: string }) {

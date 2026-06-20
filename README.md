@@ -14,6 +14,8 @@ Implemented surfaces:
 - Overview dashboard with live operational metrics from the backend.
 - Content Studio kanban workflow for ideas, drafting, review, and publish
   readiness.
+- Manual content composer and library for pasted copy, asset URLs, campaign
+  assignment, status, tags, and scheduling without an AI API.
 - Content Calendar and schedule detail panels.
 - AI Generator UI for copy, image, video, and strategy prompts.
 - Campaign CRUD with table, detail panel, duplicate, edit, and delete actions.

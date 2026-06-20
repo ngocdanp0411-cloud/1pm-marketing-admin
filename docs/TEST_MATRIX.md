@@ -25,6 +25,7 @@ the matrix mechanically.
 | US-005 | Social composer supports text, image/media URL, and schedule input end-to-end. | no | yes | no | yes | implemented | `npm run build`; `npm run test:api` with media URL assertions. |
 | US-008 | Backend uses `APP_ADMIN_PASSWORD` and HttpOnly cookie sessions to protect all non-public API routes while keeping service metadata, health, and auth lifecycle routes public. | no | yes | no | yes | implemented | `npm run build`; `npm run test:api` 3/3 covers public auth ordering, cookie login/logout, credential-aware local CORS, and protected bootstrap/CRUD access. |
 | US-011 | Frontend checks auth before rendering, provides password login, sends cookie credentials, and logs out from the topbar. | no | yes | no | yes | implemented | `npm run build`; backend auth tests 3/3; local browser login-screen smoke. |
+| US-012 | Manual content composer persists pasted copy, asset URL, notes, campaign, schedule, status, and tags; library supports edit/delete/status changes and scheduled items appear in Calendar. | no | yes | no | yes | implemented | `npm run build`; `npm run test:api` manual content CRUD/bootstrap persistence assertions; browser review. |
 
 ## Evidence Rules
 

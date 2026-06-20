@@ -38,9 +38,26 @@ Content items are stored under the `content` resource with workflow fields:
 - `channel`
 - `campaignId`
 - `summary`
+- `copy`
+- `mediaUrl`
+- `visualNotes`
+- `copyNotes`
+- `scheduledFor`
+- `tags`
+- `source`
 
 The Content Studio page groups items into workflow columns. Review and publish
 states may be updated through row actions and the action workflow modal.
+
+Manual content is the primary creation path. An operator can paste copy created
+elsewhere, add a public image/video URL, keep visual and copy prompts as notes,
+assign a campaign, set Draft/Ready/Scheduled/Published status, and reopen the
+item from the library or calendar. Items with `scheduledFor` appear in the
+Content Calendar.
+
+Binary file upload is not implemented yet because the app has no object
+storage. The composer shows an upload placeholder and persists asset URLs in
+the JSON backend.
 
 ## Social Posting
 

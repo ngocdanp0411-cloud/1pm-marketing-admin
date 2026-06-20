@@ -53,6 +53,13 @@ export interface ContentItem {
   channel?: string;
   campaignId?: string | null;
   summary?: string;
+  copy?: string;
+  mediaUrl?: string | null;
+  visualNotes?: string;
+  copyNotes?: string;
+  scheduledFor?: string | null;
+  tags?: string;
+  source?: "manual" | "ai" | string;
 }
 
 export interface SocialPost {

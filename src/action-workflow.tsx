@@ -131,15 +131,24 @@ function CampaignFields({ form, onChange }: FieldProps) {
 function ContentFields({ form, campaigns, onChange }: FieldProps & { campaigns: CampaignRow[] }) {
   return (
     <div className="workflow-grid">
-      <Field label="Title" value={form.title} onChange={(value) => onChange("title", value)} required />
-      <SelectField label="Type" value={form.type} options={["Blog - SEO", "Video - Campaign", "Email - Campaign", "Carousel - Social", "Case Study - PDF", "Ad - Paid Social"]} onChange={(value) => onChange("type", value)} />
-      <SelectField label="Stage" value={form.stage} options={["Ideas", "Briefing", "Drafting", "Review", "Ready to Publish"]} onChange={(value) => onChange("stage", value)} />
-      <SelectField label="Status" value={form.status} options={["Ideation", "Brief Ready", "Drafting", "In Review", "Approved", "Changes Requested"]} onChange={(value) => onChange("status", value)} />
-      <Field label="Due date" type="date" value={form.date} onChange={(value) => onChange("date", value)} />
-      <Field label="Owner" value={form.owner} onChange={(value) => onChange("owner", value)} />
-      <Field label="Channel" value={form.channel} onChange={(value) => onChange("channel", value)} />
+      <Field label="Internal title" value={form.title} onChange={(value) => onChange("title", value)} required />
+      <SelectField label="Platform / channel" value={form.channel} options={["Facebook", "Instagram", "TikTok", "Email", "Blog", "Other"]} onChange={(value) => onChange("channel", value)} />
+      <SelectField label="Content type" value={form.type} options={["Caption", "Carousel", "Reels", "Email", "Blog post", "Other"]} onChange={(value) => onChange("type", value)} />
+      <SelectField label="Status" value={form.status} options={["Draft", "Ready", "Scheduled", "Published"]} onChange={(value) => onChange("status", value)} />
       <CampaignSelect value={form.campaignId} campaigns={campaigns} onChange={(value) => onChange("campaignId", value)} />
-      <Field label="Summary" value={form.summary} onChange={(value) => onChange("summary", value)} multiline full />
+      <Field label="Scheduled date / time" type="datetime-local" value={toDatetimeLocal(form.scheduledFor)} onChange={(value) => onChange("scheduledFor", value)} />
+      <Field label="Image / video asset URL" value={form.mediaUrl} onChange={(value) => onChange("mediaUrl", value)} />
+      <Field label="Tags" value={form.tags} onChange={(value) => onChange("tags", value)} />
+      <Field label="Main copy / content" value={form.copy} onChange={(value) => onChange("copy", value)} multiline full required />
+      <Field label="Visual prompt / notes" value={form.visualNotes} onChange={(value) => onChange("visualNotes", value)} multiline full />
+      <Field label="Copy prompt / notes" value={form.copyNotes} onChange={(value) => onChange("copyNotes", value)} multiline full />
+      <div className="upload-placeholder field full">
+        <span>Upload asset</span>
+        <label>
+          <input type="file" accept="image/*,video/*" disabled />
+          <span>File upload storage is not connected yet. Paste a public asset URL above.</span>
+        </label>
+      </div>
     </div>
   );
 }
@@ -231,15 +240,20 @@ function buildInitialForm(request: WorkflowRequest): Record<string, string> {
 
   if (request.kind === "content") {
     return normalize({
-      title: duplicateName(request, initial.title, "New Content Item"),
-      type: initial.type ?? "Blog - SEO",
+      title: duplicateName(request, initial.title, "New manual content"),
+      type: initial.type ?? "Caption",
       stage: initial.stage ?? "Ideas",
-      status: request.mode === "duplicate" ? "Ideation" : initial.status ?? "Ideation",
-      date: initial.date ?? "",
+      status: request.mode === "duplicate" ? "Draft" : initial.status ?? "Draft",
       owner: initial.owner ?? "Ngọc Dân",
-      channel: initial.channel ?? "Content Studio",
+      channel: initial.channel ?? "Facebook",
       campaignId: initial.campaignId ?? "",
-      summary: initial.summary ?? "",
+      copy: initial.copy ?? initial.summary ?? "",
+      mediaUrl: initial.mediaUrl ?? "",
+      visualNotes: initial.visualNotes ?? "",
+      copyNotes: initial.copyNotes ?? "",
+      scheduledFor: initial.scheduledFor ?? "",
+      tags: initial.tags ?? "",
+      source: initial.source ?? "manual",
     });
   }
 
@@ -262,7 +276,16 @@ function buildPayload(kind: WorkflowKind, form: Record<string, string>) {
   }
 
   if (kind === "content") {
-    return { ...pick(form, ["title", "type", "date", "status", "stage", "owner", "channel", "summary"]), campaignId: emptyToNull(form.campaignId) };
+    const scheduledFor = form.scheduledFor || null;
+    return {
+      ...pick(form, ["title", "type", "status", "owner", "channel", "copy", "visualNotes", "copyNotes", "tags", "source"]),
+      stage: contentStageForStatus(form.status),
+      date: scheduledFor ? scheduledFor.slice(0, 10) : "",
+      summary: form.copy,
+      scheduledFor,
+      mediaUrl: emptyToNull(form.mediaUrl),
+      campaignId: emptyToNull(form.campaignId),
+    };
   }
 
   return { ...pick(form, ["title", "channel", "status", "owner", "copy"]), scheduledFor: form.scheduledFor || null, mediaUrl: emptyToNull(form.mediaUrl), campaignId: emptyToNull(form.campaignId) };
@@ -294,4 +317,10 @@ function toDatetimeLocal(value?: string) {
   }
 
   return value.endsWith("Z") ? value.slice(0, 16) : value;
+}
+
+function contentStageForStatus(status: string) {
+  if (status === "Published" || status === "Ready") return "Ready to Publish";
+  if (status === "Scheduled") return "Review";
+  return "Drafting";
 }

@@ -104,6 +104,51 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     const deleted = await api.delete(`/api/campaigns/${created.data.id}`);
     assert.equal(deleted.data.deleted, true);
 
+    const manualContent = await api.post("/api/content", {
+      title: "Manual launch caption",
+      type: "Caption",
+      channel: "Facebook",
+      status: "Scheduled",
+      stage: "Review",
+      owner: "Ngọc Dân",
+      campaignId: "campaign-launch-2026",
+      copy: "Copy drafted in Claude and pasted into the manual composer.",
+      mediaUrl: "https://cdn.1pm.test/manual-launch.png",
+      visualNotes: "ChatGPT visual: clean product hero with dark background.",
+      copyNotes: "Keep the CTA concise.",
+      scheduledFor: "2026-06-24T10:30",
+      date: "2026-06-24",
+      tags: "launch, facebook, manual",
+      source: "manual",
+      summary: "Copy drafted in Claude and pasted into the manual composer.",
+    });
+    assert.equal(manualContent.ok, true);
+    assert.equal(manualContent.data.source, "manual");
+    assert.equal(manualContent.data.mediaUrl, "https://cdn.1pm.test/manual-launch.png");
+    assert.equal(manualContent.data.scheduledFor, "2026-06-24T10:30");
+
+    const editedManualContent = await api.patch(`/api/content/${manualContent.data.id}`, {
+      status: "Published",
+      stage: "Ready to Publish",
+      copy: "Updated manual copy.",
+    });
+    assert.equal(editedManualContent.data.status, "Published");
+    assert.equal(editedManualContent.data.copy, "Updated manual copy.");
+
+    const contentLibrary = await api.get("/api/content");
+    assert.equal(
+      contentLibrary.data.find((item) => item.id === manualContent.data.id)?.tags,
+      "launch, facebook, manual",
+    );
+    const contentBootstrap = await api.get("/api/bootstrap");
+    assert.equal(
+      contentBootstrap.data.contentItems.find((item) => item.id === manualContent.data.id)?.scheduledFor,
+      "2026-06-24T10:30",
+    );
+
+    const deletedManualContent = await api.delete(`/api/content/${manualContent.data.id}`);
+    assert.equal(deletedManualContent.data.deleted, true);
+
     const tiktokPost = await api.post("/api/social-posts", {
       title: "TikTok API Smoke",
       channel: "TikTok",
