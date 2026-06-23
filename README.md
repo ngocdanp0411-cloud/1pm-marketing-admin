@@ -11,27 +11,25 @@ product development. It is not yet ready for public multi-customer SaaS use.
 
 Implemented surfaces:
 
-- Overview dashboard with live operational metrics from the backend.
-- Content Studio kanban workflow for ideas, drafting, review, and publish
-  readiness.
-- Manual content composer and library for pasted copy, asset URLs, campaign
-  assignment, status, tags, and scheduling without an AI API.
-- Content Calendar and schedule detail panels.
-- AI Generator UI for copy, image, video, and strategy prompts.
-- Campaign CRUD with table, detail panel, duplicate, edit, and delete actions.
-- Analytics, Brand Assets, Local Marketing, and Settings dashboards.
-- Social Posting composer, queue, publish log, notifications, and integration
-  health.
-- Vietnamese/English language toggle.
+- `Hôm nay` action inbox for drafts, reviews, ready items, scheduled work,
+  overdue work, and failed publishing.
+- One unified Content library from Brief through Published or Failed.
+- Brand-aware composer for pasted copy, media URLs, prompts/notes, checklist,
+  schedule, learning notes, and reusable content.
+- Content Calendar derived directly from scheduled Content records.
+- Brand-scoped campaigns with related content and status progress.
+- Brand profiles for voice, tone, visual direction, CTA, hashtags, pillars,
+  checklist, prompts, and asset notes.
+- Brand-scoped channels/pages and a manual publishing queue.
 
 Current real operations:
 
-- Backend CRUD for campaigns, content, calendar events, social posts,
-  integrations, publish logs, and notifications.
+- Backend CRUD for brands, channels, campaigns, content, and supporting legacy
+  resources.
 - JSON persistence in `data/app-state.json`.
+- Manual publish completion with published URL, learning note, and publish log.
 - Facebook Page publishing through Graph API when `FACEBOOK_PAGE_ID` and
-  `FACEBOOK_PAGE_ACCESS_TOKEN` are configured.
-- Demo publish adapters for Instagram, Threads, TikTok, LinkedIn, and X.
+  `FACEBOOK_PAGE_ACCESS_TOKEN` are configured through the legacy provider route.
 
 Known gaps:
 
@@ -39,8 +37,8 @@ Known gaps:
   identity or role system.
 - Sessions are in memory and are not suitable for multi-instance or multi-user use.
 - No PostgreSQL or tenant isolation.
-- No background scheduler loop yet; scheduled posts require manual publish.
-- Media binary upload/storage is not implemented; social posts currently persist
+- No background scheduler loop; scheduled content uses the manual publish flow.
+- Media binary upload/storage is not implemented; Content currently persists
   image/media references as `mediaUrl`.
 
 The current login is a temporary internal password gate for a private admin

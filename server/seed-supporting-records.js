@@ -7,7 +7,7 @@ export const seedCalendarEvents = [
     endTime: "09:30",
     status: "Scheduled",
     channel: "Internal",
-    owner: "Olivia Morgan",
+    owner: "Ngọc Dân",
     campaignId: "campaign-launch-2026",
     notes: "Daily cross-functional sync.",
     createdAt: "2026-06-01T08:00:00.000Z",
@@ -21,7 +21,7 @@ export const seedCalendarEvents = [
     endTime: "11:45",
     status: "Scheduled",
     channel: "Email",
-    owner: "Sophia Bennett",
+    owner: "Ngọc Dân",
     campaignId: "campaign-launch-2026",
     notes: "Final copy and QA sign-off.",
     createdAt: "2026-06-01T08:00:00.000Z",
@@ -35,7 +35,7 @@ export const seedCalendarEvents = [
     endTime: "16:00",
     status: "Scheduled",
     channel: "Instagram",
-    owner: "Ava Martinez",
+    owner: "Ngọc Dân",
     campaignId: "campaign-social-2026",
     notes: "Studio capture for new reel sequence.",
     createdAt: "2026-06-01T08:00:00.000Z",
@@ -50,13 +50,7 @@ export const seedBrandAssets = [
   { id: "asset-template-pack", name: "Social Template Pack", type: "ZIP", size: "45 MB", updatedAt: "2026-05-22T10:00:00.000Z", url: "/assets/brand/social-template-pack.zip" },
 ];
 
-export const seedTeamMembers = [
-  { id: "member-olivia", name: "Olivia Morgan", role: "Marketing Director", status: "online", focus: "Launch oversight" },
-  { id: "member-liam", name: "Liam Carter", role: "Performance Lead", status: "online", focus: "Paid acquisition" },
-  { id: "member-sophia", name: "Sophia Bennett", role: "Lifecycle Manager", status: "busy", focus: "Email and CRM" },
-  { id: "member-noah", name: "Noah Williams", role: "Content Strategist", status: "online", focus: "Thought leadership" },
-  { id: "member-ava", name: "Ava Martinez", role: "Creative Producer", status: "offline", focus: "Video and social" },
-];
+export const seedTeamMembers = [];
 
 export const seedIntegrations = [
   {
@@ -160,28 +154,7 @@ export const seedPublishLogs = [
   },
 ];
 
-export const seedNotifications = [
-  {
-    id: "notification-x-reconnect",
-    type: "integration",
-    title: "Reconnect X",
-    message: "The X channel token expires soon. Reconnect before the next scheduled post.",
-    severity: "warning",
-    status: "unread",
-    relatedId: "integration-x",
-    createdAt: "2026-06-05T10:05:00.000Z",
-  },
-  {
-    id: "notification-approval",
-    type: "approval",
-    title: "Social approval needed",
-    message: "One draft is waiting for approval before publishing.",
-    severity: "info",
-    status: "unread",
-    relatedId: "social-x-launch",
-    createdAt: "2026-06-05T10:15:00.000Z",
-  },
-];
+export const seedNotifications = [];
 
 export const seedSocialQueue = [
   {
@@ -191,7 +164,7 @@ export const seedSocialQueue = [
     status: "Queued",
     publishStatus: "Scheduled",
     scheduledFor: "2026-06-03T15:00:00.000Z",
-    owner: "Noah Williams",
+    owner: "Ngọc Dân",
     copy: "New report drops tomorrow. Here is the one chart revenue leaders keep asking for.",
     campaignId: "campaign-b2b-2026",
     lastPublishError: "",
@@ -207,7 +180,7 @@ export const seedSocialQueue = [
     status: "Published",
     publishStatus: "Published",
     scheduledFor: "2026-06-03T09:30:00.000Z",
-    owner: "Ava Martinez",
+    owner: "Ngọc Dân",
     copy: "A 20-second look at the workflow that replaces scattered campaign ops.",
     campaignId: "campaign-social-2026",
     lastPublishError: "",
@@ -223,7 +196,7 @@ export const seedSocialQueue = [
     status: "Failed",
     publishStatus: "Failed",
     scheduledFor: "2026-06-04T13:00:00.000Z",
-    owner: "Olivia Morgan",
+    owner: "Ngọc Dân",
     copy: "Three days until launch. Here is what the team changed after the beta cohort.",
     campaignId: "campaign-launch-2026",
     lastPublishError: "X token expires soon. Reconnect before publishing.",

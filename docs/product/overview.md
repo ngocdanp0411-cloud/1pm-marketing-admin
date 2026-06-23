@@ -21,30 +21,28 @@ states, and fast recovery from failed work.
 
 | Page | Contract |
 | --- | --- |
-| Overview | Show live operational counts, campaign performance, schedule, content pipeline, channel mix, operation alerts, and marketing health. |
-| Content Studio | Manage content items across workflow stages and edit through action workflow modal. |
-| Content Calendar | Show scheduled work by date with selected-day detail and approval status. |
-| AI Generator | Provide UI for prompt templates, copy/image/video/strategy generation, and generated asset cards. |
-| Campaigns | CRUD campaign rows, inspect selected campaign, duplicate, edit, and delete. |
-| Analytics | Show marketing analytics surfaces; non-live metrics must stay honest as estimates. |
-| Brand Assets | Manage brand asset library and brand kit surfaces. |
-| Social Posting | Compose posts, manage channel integrations, queue publishing, publish now/retry, and view publish logs. |
-| Local Marketing | Show local listing/review/SEO surface; currently demo/manual. |
-| Settings | Workspace settings, integrations, notifications, and user/admin preferences. |
+| Hôm nay | Show the next operational work grouped by Brief/Draft, Review, Ready, Scheduled today, overdue, and Failed. |
+| Nội dung | Create, filter, edit, delete, and advance one unified Content library. |
+| Lịch | Show scheduled Content only, with month and agenda views opening the same editor. |
+| Chiến dịch | Manage Brand-scoped campaigns, related content, and progress by status. |
+| Brand | Manage reusable Brand context, checklist, content pillars, prompts, and channels. |
+| Kênh đăng | Manage Brand-scoped pages and complete manual publishing from the unified Content queue. |
 
-## Language
+The primary operator UI uses simple Vietnamese labels. Demo-only AI Generator,
+Local Marketing, fake Analytics, and fake Settings surfaces are no longer in
+the main navigation.
 
-The UI supports English and Vietnamese through the language toggle in the
-topbar. The selected language is stored in `localStorage` under
-`onepm-language`.
+`Cài đặt` is an auxiliary sidebar item below the operating menu. It only shows
+Workspace, Account, and Interface basics; team management, billing, fake
+security tabs, and demo integrations are intentionally absent.
 
 ## Product Truth Rules
 
 - Do not label metrics as live if they are manual or demo estimates.
-- Social publishing may be claimed as real only for Facebook Page when Graph API
-  credentials are configured.
-- Instagram, Threads, TikTok, LinkedIn, and X are demo adapters until OAuth,
-  app review, and provider-specific publish APIs exist.
+- The primary workflow is manual publishing. Connection status must say
+  `Chưa kết nối`, `Sắp có`, or `Kết nối sau`.
+- Legacy Facebook Page Graph API code remains available but is not presented as
+  the default operating workflow.
 - JSON store is allowed for personal v1 and demo deploys, but not for public
   customer data.
 

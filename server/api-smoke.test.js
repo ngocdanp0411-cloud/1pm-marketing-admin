@@ -83,14 +83,42 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     const bootstrap = await api.get("/api/bootstrap");
     assert.equal(bootstrap.ok, true);
     assert.equal(bootstrap.data.workspace.apiPort, port);
+    assert.ok(Array.isArray(bootstrap.data.brands));
+    assert.ok(Array.isArray(bootstrap.data.channels));
     assert.ok(Array.isArray(bootstrap.data.campaigns));
     assert.ok(Array.isArray(bootstrap.data.integrations));
     assert.ok(Array.isArray(bootstrap.data.publishLogs));
     assert.ok(Array.isArray(bootstrap.data.notifications));
+    assert.ok(!bootstrap.data.teamMembers?.some((item) => ["Olivia Morgan", "Liam Carter", "Sophia Bennett", "Noah Williams", "Ava Martinez"].includes(item.name)));
+    assert.ok(!bootstrap.data.notifications.some((item) => ["Reconnect X", "Social approval needed"].includes(item.title)));
+
+    const createdBrand = await api.post("/api/brands", {
+      name: "API Smoke Brand",
+      shortDescription: "Brand fixture for unified content operations.",
+      brandVoice: "Clear and practical.",
+      toneMood: "Confident",
+      checklistTemplate: "Brand voice checked\nCTA checked",
+      contentPillars: "Operations\nEducation",
+    });
+    assert.equal(createdBrand.ok, true);
+    assert.match(createdBrand.data.id, /^brand-/);
+
+    const createdChannel = await api.post("/api/channels", {
+      brandId: createdBrand.data.id,
+      platform: "Facebook",
+      pageName: "API Smoke Page",
+      url: "https://facebook.com/api-smoke-page",
+      connectionStatus: "Kết nối sau",
+      postingRules: "Use one clear CTA.",
+    });
+    assert.equal(createdChannel.ok, true);
+    assert.equal(createdChannel.data.brandId, createdBrand.data.id);
 
     const created = await api.post("/api/campaigns", {
+      brandId: createdBrand.data.id,
       name: "API Smoke Campaign",
-      channel: "Email",
+      objective: "Prove brand-aware campaign persistence.",
+      keyMessage: "One unified workflow.",
       status: "Draft",
     });
     assert.equal(created.ok, true);
@@ -101,38 +129,48 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     });
     assert.equal(patched.data.status, "Active");
 
-    const deleted = await api.delete(`/api/campaigns/${created.data.id}`);
-    assert.equal(deleted.data.deleted, true);
-
     const manualContent = await api.post("/api/content", {
+      brandId: createdBrand.data.id,
+      channelId: createdChannel.data.id,
       title: "Manual launch caption",
+      contentType: "Caption",
       type: "Caption",
       channel: "Facebook",
       status: "Scheduled",
-      stage: "Review",
+      stage: "Scheduled",
       owner: "Ngọc Dân",
-      campaignId: "campaign-launch-2026",
+      campaignId: created.data.id,
       copy: "Copy drafted in Claude and pasted into the manual composer.",
       mediaUrl: "https://cdn.1pm.test/manual-launch.png",
+      visualPromptNotes: "ChatGPT visual: clean product hero with dark background.",
       visualNotes: "ChatGPT visual: clean product hero with dark background.",
+      copyPromptNotes: "Keep the CTA concise.",
       copyNotes: "Keep the CTA concise.",
+      scheduledAt: "2026-06-24T10:30",
       scheduledFor: "2026-06-24T10:30",
       date: "2026-06-24",
+      publishedUrl: "",
+      learningNote: "",
+      reusable: true,
       tags: "launch, facebook, manual",
+      checklistItems: ["Brand voice checked", "CTA checked"],
       source: "manual",
       summary: "Copy drafted in Claude and pasted into the manual composer.",
     });
     assert.equal(manualContent.ok, true);
     assert.equal(manualContent.data.source, "manual");
+    assert.equal(manualContent.data.brandId, createdBrand.data.id);
+    assert.equal(manualContent.data.channelId, createdChannel.data.id);
+    assert.equal(manualContent.data.reusable, true);
     assert.equal(manualContent.data.mediaUrl, "https://cdn.1pm.test/manual-launch.png");
-    assert.equal(manualContent.data.scheduledFor, "2026-06-24T10:30");
+    assert.equal(manualContent.data.scheduledAt, "2026-06-24T10:30");
 
     const editedManualContent = await api.patch(`/api/content/${manualContent.data.id}`, {
-      status: "Published",
-      stage: "Ready to Publish",
+      status: "Ready",
+      stage: "Ready",
       copy: "Updated manual copy.",
     });
-    assert.equal(editedManualContent.data.status, "Published");
+    assert.equal(editedManualContent.data.status, "Ready");
     assert.equal(editedManualContent.data.copy, "Updated manual copy.");
 
     const contentLibrary = await api.get("/api/content");
@@ -142,12 +180,41 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     );
     const contentBootstrap = await api.get("/api/bootstrap");
     assert.equal(
-      contentBootstrap.data.contentItems.find((item) => item.id === manualContent.data.id)?.scheduledFor,
+      contentBootstrap.data.contentItems.find((item) => item.id === manualContent.data.id)?.scheduledAt,
       "2026-06-24T10:30",
     );
 
+    const blockedBrandDelete = await api.delete(`/api/brands/${createdBrand.data.id}`);
+    assert.equal(blockedBrandDelete.ok, false);
+    assert.equal(blockedBrandDelete.error.code, "RESOURCE_IN_USE");
+
+    const manualFailure = await api.post(`/api/content/${manualContent.data.id}/manual-publish`, {
+      status: "Failed",
+      note: "Channel rejected the manual post.",
+    });
+    assert.equal(manualFailure.ok, true);
+    assert.equal(manualFailure.data.content.status, "Failed");
+    assert.equal(manualFailure.data.log.status, "failed");
+
+    const manualPublish = await api.post(`/api/content/${manualContent.data.id}/manual-publish`, {
+      status: "Published",
+      publishedUrl: "https://facebook.com/api-smoke-page/posts/123",
+      note: "Published manually and verified.",
+    });
+    assert.equal(manualPublish.ok, true);
+    assert.equal(manualPublish.data.content.status, "Published");
+    assert.equal(manualPublish.data.content.publishedUrl, "https://facebook.com/api-smoke-page/posts/123");
+    assert.equal(manualPublish.data.log.contentId, manualContent.data.id);
+    assert.equal(manualPublish.data.log.channelId, createdChannel.data.id);
+
     const deletedManualContent = await api.delete(`/api/content/${manualContent.data.id}`);
     assert.equal(deletedManualContent.data.deleted, true);
+    const deletedCampaign = await api.delete(`/api/campaigns/${created.data.id}`);
+    assert.equal(deletedCampaign.data.deleted, true);
+    const deletedChannel = await api.delete(`/api/channels/${createdChannel.data.id}`);
+    assert.equal(deletedChannel.data.deleted, true);
+    const deletedBrand = await api.delete(`/api/brands/${createdBrand.data.id}`);
+    assert.equal(deletedBrand.data.deleted, true);
 
     const tiktokPost = await api.post("/api/social-posts", {
       title: "TikTok API Smoke",

@@ -1,89 +1,130 @@
-import { AlertCircle, Check, Copy, Edit3, LoaderCircle, Plus, Trash2, X } from "lucide-react";
-import { FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
-import type { CampaignRow, ContentItem, SocialPost } from "./types";
+import { AlertCircle, Check, Clipboard, ExternalLink, LoaderCircle, X } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import { contentStatuses, contentTypeOptions, platformOptions } from "./data";
+import type { Brand, CampaignRow, Channel, ContentItem } from "./types";
 
-export type WorkflowKind = "campaign" | "content" | "social";
-export type WorkflowMode = "create" | "edit" | "duplicate";
-
+export type WorkflowKind = "brand" | "channel" | "campaign" | "content" | "manual-publish";
+export type WorkflowMode = "create" | "edit";
 export interface WorkflowRequest {
   kind: WorkflowKind;
   mode: WorkflowMode;
-  initial?: CampaignRow | ContentItem | SocialPost;
-  defaults?: Partial<CampaignRow & ContentItem & SocialPost>;
+  initial?: Brand | Channel | CampaignRow | ContentItem;
+  defaults?: Record<string, unknown>;
 }
 
-interface ActionWorkflowModalProps {
+interface Props {
   request: WorkflowRequest;
+  brands: Brand[];
+  channels: Channel[];
   campaigns: CampaignRow[];
   busy: boolean;
   error?: string;
   onClose: () => void;
-  onSubmit: (request: WorkflowRequest, payload: Partial<CampaignRow & ContentItem & SocialPost>) => void;
+  onSubmit: (request: WorkflowRequest, payload: Record<string, unknown>) => void;
 }
 
-export function ActionWorkflowModal({ request, campaigns, busy, error, onClose, onSubmit }: ActionWorkflowModalProps) {
-  const title = useMemo(() => buildTitle(request), [request]);
+export function ActionWorkflowModal(props: Props) {
   const titleId = useId();
   const modalRef = useRef<HTMLFormElement>(null);
-  const [form, setForm] = useState<Record<string, string>>(buildInitialForm(request));
+  const [form, setForm] = useState(() => buildInitialForm(props.request));
+  const [checklist, setChecklist] = useState<string[]>(() => initialChecklist(props.request));
+  const selectedBrand = props.brands.find((brand) => brand.id === form.brandId);
+  const brandChannels = props.channels.filter((channel) => channel.brandId === form.brandId);
+  const brandCampaigns = props.campaigns.filter((campaign) => campaign.brandId === form.brandId);
 
   useEffect(() => {
-    setForm(buildInitialForm(request));
-  }, [request]);
+    setForm(buildInitialForm(props.request));
+    setChecklist(initialChecklist(props.request));
+  }, [props.request]);
 
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
+    const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     modalRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus();
+    const close = (event: KeyboardEvent) => event.key === "Escape" && !props.busy && props.onClose();
+    window.addEventListener("keydown", close);
+    return () => { document.body.style.overflow = previous; window.removeEventListener("keydown", close); };
+  }, [props.busy, props.onClose]);
 
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !busy) {
-        onClose();
-      }
-    }
+  const checklistOptions = useMemo(() => {
+    const channel = brandChannels.find((item) => item.id === form.channelId);
+    return uniqueLines(`${selectedBrand?.checklistTemplate ?? ""}\n${channel?.postingRules ?? ""}`);
+  }, [brandChannels, form.channelId, selectedBrand]);
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [busy, onClose]);
-
-  function updateField(field: string, value: string) {
+  function update(field: string, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    onSubmit(request, buildPayload(request.kind, form));
+  function toggleChecklist(item: string) {
+    setChecklist((current) => current.includes(item) ? current.filter((value) => value !== item) : [...current, item]);
   }
 
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    props.onSubmit(props.request, buildPayload(props.request.kind, form, checklist));
+  }
+
+  const submitBlocked = props.busy
+    || (props.request.kind === "brand" && !form.name)
+    || (props.request.kind === "channel" && (!form.brandId || !form.pageName))
+    || (props.request.kind === "campaign" && (!form.brandId || !form.name))
+    || (props.request.kind === "content" && (!form.brandId || !form.title || (form.status === "Scheduled" && !form.scheduledAt)))
+    || (props.request.kind === "manual-publish" && form.publishResult === "Published" && !form.publishedUrl);
+
   return (
-    <div className="modal-layer" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget && !busy) {
-        onClose();
-      }
-    }}>
-      <form ref={modalRef} className="workflow-modal" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy} onSubmit={handleSubmit}>
+    <div className="modal-layer" onMouseDown={(event) => event.target === event.currentTarget && !props.busy && props.onClose()}>
+      <form ref={modalRef} className={`workflow-modal ${props.request.kind === "content" ? "composer-modal" : ""}`} role="dialog" aria-modal="true" aria-labelledby={titleId} onSubmit={submit}>
         <div className="modal-head">
-          <div>
-            <span>{request.mode === "edit" ? "Edit workflow" : request.mode === "duplicate" ? "Duplicate record" : "Create workflow"}</span>
-            <h2 id={titleId}>{title}</h2>
-          </div>
-          <button type="button" className="icon-btn" aria-label="Close workflow modal" disabled={busy} onClick={onClose}><X /></button>
+          <div><span>{props.request.mode === "edit" ? "Chỉnh sửa" : "Tạo mới"}</span><h2 id={titleId}>{modalTitle(props.request)}</h2></div>
+          <button type="button" className="icon-btn" aria-label="Đóng" onClick={props.onClose}><X /></button>
         </div>
 
-        {request.kind === "campaign" && <CampaignFields form={form} onChange={updateField} />}
-        {request.kind === "content" && <ContentFields form={form} campaigns={campaigns} onChange={updateField} />}
-        {request.kind === "social" && <SocialFields form={form} campaigns={campaigns} onChange={updateField} />}
+        {props.request.kind === "brand" && <BrandFields form={form} update={update} />}
+        {props.request.kind === "channel" && <ChannelFields form={form} brands={props.brands} update={update} />}
+        {props.request.kind === "campaign" && <CampaignFields form={form} brands={props.brands} update={update} />}
+        {props.request.kind === "content" && (
+          <div className="composer-layout">
+            <div className="composer-form">
+              <Section title="A. Bài này thuộc đâu?">
+                <Select label="Brand" value={form.brandId} options={props.brands.map(toOption)} onChange={(value) => { update("brandId", value); update("channelId", ""); update("campaignId", ""); setChecklist([]); }} required />
+                <Select label="Kênh / Page" value={form.channelId} options={brandChannels.map(channelOption)} onChange={(value) => update("channelId", value)} empty="Chưa chọn kênh" />
+                <Select label="Chiến dịch" value={form.campaignId} options={brandCampaigns.map(toOption)} onChange={(value) => update("campaignId", value)} empty="Không thuộc chiến dịch" />
+                <Select label="Loại nội dung" value={form.contentType} options={contentTypeOptions.map(simpleOption)} onChange={(value) => update("contentType", value)} />
+                <Field label="Tiêu đề nội bộ" value={form.title} onChange={(value) => update("title", value)} required />
+              </Section>
+              <Section title="B. Nội dung là gì?">
+                <Field label="Nội dung chính" value={form.copy} onChange={(value) => update("copy", value)} multiline full />
+                <Field label="URL ảnh / video" type="url" value={form.mediaUrl} onChange={(value) => update("mediaUrl", value)} full />
+                <Field label="Ghi chú prompt hình ảnh" value={form.visualPromptNotes} onChange={(value) => update("visualPromptNotes", value)} multiline full />
+                <Field label="Ghi chú prompt nội dung" value={form.copyPromptNotes} onChange={(value) => update("copyPromptNotes", value)} multiline full />
+                <Field label="Tags, cách nhau bằng dấu phẩy" value={form.tags} onChange={(value) => update("tags", value)} full />
+              </Section>
+              <Section title="C. Khi nào đăng?">
+                <Select label="Trạng thái" value={form.status} options={contentStatuses.map(simpleOption)} onChange={(value) => update("status", value)} />
+                <Field label="Ngày giờ đăng" type="datetime-local" value={toDatetimeLocal(form.scheduledAt)} onChange={(value) => update("scheduledAt", value)} />
+                <Field label="URL bài đã đăng" type="url" value={form.publishedUrl} onChange={(value) => update("publishedUrl", value)} />
+              </Section>
+              <Section title="D. Đã đạt chuẩn chưa?">
+                <div className="checklist-field full">
+                  {checklistOptions.length ? checklistOptions.map((item) => (
+                    <label key={item}><input type="checkbox" checked={checklist.includes(item)} onChange={() => toggleChecklist(item)} /><span>{item}</span></label>
+                  )) : <p>Brand chưa có checklist. Anh có thể bổ sung trong trang Brand.</p>}
+                </div>
+                <Field label="Learning note" value={form.learningNote} onChange={(value) => update("learningNote", value)} multiline full />
+                <label className="toggle-field full"><input type="checkbox" checked={form.reusable === "true"} onChange={(event) => update("reusable", String(event.target.checked))} /><span>Có thể tái sử dụng nội dung này</span></label>
+              </Section>
+            </div>
+            <BrandContext brand={selectedBrand} />
+          </div>
+        )}
+        {props.request.kind === "manual-publish" && <ManualPublishFields form={form} content={props.request.initial as ContentItem} channels={props.channels} update={update} />}
 
-        {error && <p className="form-error" role="alert"><AlertCircle />{error}</p>}
-
+        {props.error && <p className="form-error" role="alert"><AlertCircle />{props.error}</p>}
         <div className="modal-actions">
-          <button type="button" className="wide-btn" disabled={busy} onClick={onClose}>Cancel</button>
-          <button type="submit" className="primary-btn" disabled={busy}>
-            {busy ? <LoaderCircle className="spin" /> : request.mode === "edit" ? <Edit3 /> : request.mode === "duplicate" ? <Copy /> : <Plus />}
-            {busy ? "Saving..." : request.mode === "edit" ? "Save Changes" : "Create"}
+          <button type="button" className="secondary-btn" disabled={props.busy} onClick={props.onClose}>Hủy</button>
+          <button type="submit" className="primary-btn" disabled={submitBlocked}>
+            {props.busy ? <LoaderCircle className="spin" /> : <Check />}
+            {props.busy ? "Đang lưu…" : submitLabel(props.request)}
           </button>
         </div>
       </form>
@@ -91,236 +132,166 @@ export function ActionWorkflowModal({ request, campaigns, busy, error, onClose, 
   );
 }
 
-export function RowActions({ onEdit, onDuplicate, onDelete }: { onEdit: () => void; onDuplicate: () => void; onDelete: () => void }) {
-  return (
-    <span className="row-actions">
-      <button aria-label="Edit record" onClick={onEdit}><Edit3 /></button>
-      <button aria-label="Duplicate record" onClick={onDuplicate}><Copy /></button>
-      <button aria-label="Delete record" onClick={onDelete}><Trash2 /></button>
-    </span>
-  );
+function BrandFields({ form, update }: FormProps) {
+  return <div className="workflow-grid">
+    <Field label="Tên Brand" value={form.name} onChange={(v) => update("name", v)} required />
+    <Field label="Mô tả ngắn" value={form.shortDescription} onChange={(v) => update("shortDescription", v)} />
+    <Field label="Định vị" value={form.positioning} onChange={(v) => update("positioning", v)} multiline full />
+    <Field label="Khách hàng mục tiêu" value={form.targetAudience} onChange={(v) => update("targetAudience", v)} multiline full />
+    <Field label="Brand Voice" value={form.brandVoice} onChange={(v) => update("brandVoice", v)} multiline full />
+    <Field label="Tone & Mood" value={form.toneMood} onChange={(v) => update("toneMood", v)} />
+    <Field label="Ghi chú Visual" value={form.visualStyleNotes} onChange={(v) => update("visualStyleNotes", v)} multiline full />
+    <Field label="Màu sắc" value={form.colors} onChange={(v) => update("colors", v)} />
+    <Field label="CTA mặc định" value={form.defaultCTA} onChange={(v) => update("defaultCTA", v)} />
+    <Field label="Hashtag mặc định" value={form.defaultHashtags} onChange={(v) => update("defaultHashtags", v)} />
+    <Field label="Nên làm" value={form.doList} onChange={(v) => update("doList", v)} multiline full />
+    <Field label="Không nên làm" value={form.dontList} onChange={(v) => update("dontList", v)} multiline full />
+    <Field label="Checklist mẫu, mỗi dòng một mục" value={form.checklistTemplate} onChange={(v) => update("checklistTemplate", v)} multiline full />
+    <Field label="Content Pillars, mỗi dòng một mục" value={form.contentPillars} onChange={(v) => update("contentPillars", v)} multiline full />
+    <Field label="Ghi chú phong cách Prompt" value={form.promptStyleNotes} onChange={(v) => update("promptStyleNotes", v)} multiline full />
+    <Field label="Ghi chú Asset" value={form.assetNotes} onChange={(v) => update("assetNotes", v)} multiline full />
+  </div>;
 }
 
-export function ApprovalActions({ onApprove, onChanges, busy = false }: { onApprove: () => void; onChanges: () => void; busy?: boolean }) {
-  return (
-    <span className="approval-actions" aria-busy={busy}>
-      <button disabled={busy} onClick={onApprove}>{busy ? <LoaderCircle className="spin" /> : <Check />}{busy ? "Saving" : "Approve"}</button>
-      <button disabled={busy} onClick={onChanges}><AlertCircle />Changes</button>
-    </span>
-  );
+function ChannelFields({ form, brands, update }: FormProps & { brands: Brand[] }) {
+  return <div className="workflow-grid">
+    <Select label="Brand" value={form.brandId} options={brands.map(toOption)} onChange={(v) => update("brandId", v)} required />
+    <Select label="Nền tảng" value={form.platform} options={platformOptions.map(simpleOption)} onChange={(v) => update("platform", v)} />
+    <Field label="Tên Page / tài khoản" value={form.pageName} onChange={(v) => update("pageName", v)} required />
+    <Field label="Handle" value={form.handle} onChange={(v) => update("handle", v)} />
+    <Field label="URL kênh" type="url" value={form.url} onChange={(v) => update("url", v)} />
+    <Select label="Kết nối" value={form.connectionStatus} options={["Chưa kết nối", "Sắp có", "Kết nối sau"].map(simpleOption)} onChange={(v) => update("connectionStatus", v)} />
+    <Field label="Quy tắc đăng" value={form.postingRules} onChange={(v) => update("postingRules", v)} multiline full />
+    <Field label="Format mặc định" value={form.defaultFormat} onChange={(v) => update("defaultFormat", v)} />
+    <Field label="Hashtag mặc định" value={form.defaultHashtags} onChange={(v) => update("defaultHashtags", v)} />
+    <Field label="Ghi chú giờ đăng tốt" value={form.bestPostingTimeNotes} onChange={(v) => update("bestPostingTimeNotes", v)} />
+    <Field label="Ghi chú CTA" value={form.ctaNotes} onChange={(v) => update("ctaNotes", v)} />
+  </div>;
 }
 
-function CampaignFields({ form, onChange }: FieldProps) {
-  return (
-    <div className="workflow-grid">
-      <Field label="Campaign name" value={form.name} onChange={(value) => onChange("name", value)} required />
-      <SelectField label="Channel" value={form.channel} options={["Paid Search", "Instagram", "LinkedIn", "Email Campaign", "Facebook", "Google Ads", "Display Network"]} onChange={(value) => onChange("channel", value)} />
-      <SelectField label="Status" value={form.status} options={["Draft", "Scheduled", "Active", "Paused", "Completed"]} onChange={(value) => onChange("status", value)} />
-      <Field label="Audience" value={form.audience} onChange={(value) => onChange("audience", value)} />
-      <Field label="Start date" type="date" value={form.startDate} onChange={(value) => onChange("startDate", value)} />
-      <Field label="End date" type="date" value={form.endDate} onChange={(value) => onChange("endDate", value)} />
-      <Field label="Spend" value={form.spend} onChange={(value) => onChange("spend", value)} />
-      <Field label="Conversions" value={form.conversions} onChange={(value) => onChange("conversions", value)} />
-      <Field label="CPA" value={form.cpa} onChange={(value) => onChange("cpa", value)} />
-      <Field label="ROI" value={form.roi} onChange={(value) => onChange("roi", value)} />
-      <Field label="Notes" value={form.notes} onChange={(value) => onChange("notes", value)} multiline full />
+function CampaignFields({ form, brands, update }: FormProps & { brands: Brand[] }) {
+  return <div className="workflow-grid">
+    <Select label="Brand" value={form.brandId} options={brands.map(toOption)} onChange={(v) => update("brandId", v)} required />
+    <Field label="Tên chiến dịch" value={form.name} onChange={(v) => update("name", v)} required />
+    <Field label="Mục tiêu" value={form.objective} onChange={(v) => update("objective", v)} multiline full />
+    <Field label="Thông điệp chính" value={form.keyMessage} onChange={(v) => update("keyMessage", v)} multiline full />
+    <Select label="Trạng thái" value={form.status} options={["Draft", "Active", "Completed", "Paused"].map(simpleOption)} onChange={(v) => update("status", v)} />
+    <Field label="Ngày bắt đầu" type="date" value={form.startDate} onChange={(v) => update("startDate", v)} />
+    <Field label="Ngày kết thúc" type="date" value={form.endDate} onChange={(v) => update("endDate", v)} />
+    <Field label="Ghi chú" value={form.notes} onChange={(v) => update("notes", v)} multiline full />
+  </div>;
+}
+
+function ManualPublishFields({ form, content, channels, update }: FormProps & { content: ContentItem; channels: Channel[] }) {
+  const channel = channels.find((item) => item.id === content.channelId);
+  return <div className="manual-publish">
+    <div className="publish-copy"><strong>{content.title}</strong><p>{content.copy || "Chưa có nội dung."}</p></div>
+    <div className="publish-tools">
+      <button type="button" onClick={() => void navigator.clipboard.writeText(content.copy ?? "")}><Clipboard />Copy caption</button>
+      {content.mediaUrl && <a href={content.mediaUrl} target="_blank" rel="noreferrer"><ExternalLink />Mở media</a>}
+      {channel?.url && <a href={channel.url} target="_blank" rel="noreferrer"><ExternalLink />Mở kênh đăng</a>}
     </div>
-  );
+    <Field label="URL bài đã đăng" type="url" value={form.publishedUrl} onChange={(v) => update("publishedUrl", v)} required={form.publishResult === "Published"} />
+    <Field label="Ghi chú kết quả / lỗi" value={form.note} onChange={(v) => update("note", v)} multiline />
+    <Select label="Kết quả" value={form.publishResult} options={["Published", "Failed"].map(simpleOption)} onChange={(v) => update("publishResult", v)} />
+  </div>;
 }
 
-function ContentFields({ form, campaigns, onChange }: FieldProps & { campaigns: CampaignRow[] }) {
-  return (
-    <div className="workflow-grid">
-      <Field label="Internal title" value={form.title} onChange={(value) => onChange("title", value)} required />
-      <SelectField label="Platform / channel" value={form.channel} options={["Facebook", "Instagram", "TikTok", "Email", "Blog", "Other"]} onChange={(value) => onChange("channel", value)} />
-      <SelectField label="Content type" value={form.type} options={["Caption", "Carousel", "Reels", "Email", "Blog post", "Other"]} onChange={(value) => onChange("type", value)} />
-      <SelectField label="Status" value={form.status} options={["Draft", "Ready", "Scheduled", "Published"]} onChange={(value) => onChange("status", value)} />
-      <CampaignSelect value={form.campaignId} campaigns={campaigns} onChange={(value) => onChange("campaignId", value)} />
-      <Field label="Scheduled date / time" type="datetime-local" value={toDatetimeLocal(form.scheduledFor)} onChange={(value) => onChange("scheduledFor", value)} />
-      <Field label="Image / video asset URL" value={form.mediaUrl} onChange={(value) => onChange("mediaUrl", value)} />
-      <Field label="Tags" value={form.tags} onChange={(value) => onChange("tags", value)} />
-      <Field label="Main copy / content" value={form.copy} onChange={(value) => onChange("copy", value)} multiline full required />
-      <Field label="Visual prompt / notes" value={form.visualNotes} onChange={(value) => onChange("visualNotes", value)} multiline full />
-      <Field label="Copy prompt / notes" value={form.copyNotes} onChange={(value) => onChange("copyNotes", value)} multiline full />
-      <div className="upload-placeholder field full">
-        <span>Upload asset</span>
-        <label>
-          <input type="file" accept="image/*,video/*" disabled />
-          <span>File upload storage is not connected yet. Paste a public asset URL above.</span>
-        </label>
-      </div>
-    </div>
-  );
+function BrandContext({ brand }: { brand?: Brand }) {
+  if (!brand) return <aside className="brand-context empty"><strong>Brand Context</strong><p>Chọn Brand trước để xem voice, visual, CTA và checklist.</p></aside>;
+  const rows = [
+    ["Brand Voice", brand.brandVoice], ["Tone & Mood", brand.toneMood],
+    ["Visual", brand.visualStyleNotes], ["CTA", brand.defaultCTA],
+    ["Hashtag", brand.defaultHashtags], ["Nên làm", brand.doList],
+    ["Không nên", brand.dontList], ["Prompt Style", brand.promptStyleNotes],
+  ];
+  return <aside className="brand-context"><span>Brand Context</span><h3>{brand.name}</h3>{rows.map(([label, value]) => value && <div key={label}><strong>{label}</strong><p>{value}</p></div>)}</aside>;
 }
 
-function SocialFields({ form, campaigns, onChange }: FieldProps & { campaigns: CampaignRow[] }) {
-  return (
-    <div className="workflow-grid">
-      <Field label="Post title" value={form.title} onChange={(value) => onChange("title", value)} required />
-      <SelectField label="Channel" value={form.channel} options={["Facebook", "Instagram", "LinkedIn", "X", "TikTok", "YouTube"]} onChange={(value) => onChange("channel", value)} />
-      <SelectField label="Status" value={form.status} options={["Draft", "Queued", "Pending Review", "Approved", "Changes Requested", "Published"]} onChange={(value) => onChange("status", value)} />
-      <Field label="Scheduled time" type="datetime-local" value={toDatetimeLocal(form.scheduledFor)} onChange={(value) => onChange("scheduledFor", value)} />
-      <Field label="Image / media URL" value={form.mediaUrl} onChange={(value) => onChange("mediaUrl", value)} />
-      <Field label="Owner" value={form.owner} onChange={(value) => onChange("owner", value)} />
-      <CampaignSelect value={form.campaignId} campaigns={campaigns} onChange={(value) => onChange("campaignId", value)} />
-      <Field label="Copy" value={form.copy} onChange={(value) => onChange("copy", value)} multiline full />
-    </div>
-  );
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return <fieldset className="composer-section"><legend>{title}</legend><div className="workflow-grid">{children}</div></fieldset>;
 }
 
-interface FieldProps {
-  form: Record<string, string>;
-  onChange: (field: string, value: string) => void;
-}
-
+interface FormProps { form: Record<string, string>; update: (field: string, value: string) => void }
 function Field({ label, value, onChange, type = "text", multiline = false, full = false, required = false }: {
-  label: string;
-  value?: string;
-  onChange: (value: string) => void;
-  type?: string;
-  multiline?: boolean;
-  full?: boolean;
-  required?: boolean;
+  label: string; value?: string; onChange: (value: string) => void; type?: string; multiline?: boolean; full?: boolean; required?: boolean;
 }) {
-  return (
-    <label className={full ? "field full" : "field"}>
-      <span>{label}</span>
-      {multiline ? <textarea value={value ?? ""} onChange={(event) => onChange(event.target.value)} required={required} /> : <input type={type} value={value ?? ""} onChange={(event) => onChange(event.target.value)} required={required} />}
-    </label>
-  );
+  return <label className={`field ${full ? "full" : ""}`}><span>{label}</span>{multiline
+    ? <textarea name={label} autoComplete="off" value={value ?? ""} onChange={(e) => onChange(e.target.value)} required={required} />
+    : <input name={label} autoComplete="off" type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} required={required} />}</label>;
 }
 
-function SelectField({ label, value, options, onChange }: { label: string; value?: string; options: string[]; onChange: (value: string) => void }) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <select value={value ?? options[0]} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => <option key={option}>{option}</option>)}
-      </select>
-    </label>
-  );
+function Select({ label, value, options, onChange, empty, required = false }: {
+  label: string; value?: string; options: { value: string; label: string }[]; onChange: (value: string) => void; empty?: string; required?: boolean;
+}) {
+  return <label className="field"><span>{label}</span><select name={label} value={value ?? ""} required={required} onChange={(e) => onChange(e.target.value)}>
+    {empty && <option value="">{empty}</option>}{!empty && !value && <option value="">Chọn {label.toLowerCase()}</option>}
+    {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+  </select></label>;
 }
 
-function CampaignSelect({ value, campaigns, onChange }: { value?: string; campaigns: CampaignRow[]; onChange: (value: string) => void }) {
-  return (
-    <label className="field">
-      <span>Campaign</span>
-      <select value={value ?? ""} onChange={(event) => onChange(event.target.value)}>
-        <option value="">No campaign</option>
-        {campaigns.map((campaign) => <option key={campaign.id ?? campaign.name} value={campaign.id ?? campaign.name}>{campaign.name}</option>)}
-      </select>
-    </label>
-  );
-}
-
-function buildTitle(request: WorkflowRequest) {
-  const fallback = request.kind === "campaign" ? "Campaign" : request.kind === "content" ? "Content Item" : "Social Post";
-  const initialTitle = "name" in (request.initial ?? {}) ? (request.initial as CampaignRow).name : (request.initial as ContentItem | SocialPost | undefined)?.title;
-  return initialTitle ? `${request.mode === "duplicate" ? "Copy of " : ""}${initialTitle}` : `New ${fallback}`;
-}
-
-function buildInitialForm(request: WorkflowRequest): Record<string, string> {
+function buildInitialForm(request: WorkflowRequest) {
   const initial = { ...(request.initial ?? {}), ...(request.defaults ?? {}) } as Record<string, unknown>;
-
-  if (request.kind === "campaign") {
-    return normalize({
-      name: duplicateName(request, initial.name, "New Campaign"),
-      channel: initial.channel ?? "Paid Search",
-      status: request.mode === "duplicate" ? "Draft" : initial.status ?? "Draft",
-      audience: initial.audience ?? "General Audience",
-      startDate: initial.startDate ?? "",
-      endDate: initial.endDate ?? "",
-      spend: initial.spend ?? "$0.00",
-      conversions: initial.conversions ?? "0",
-      cpa: initial.cpa ?? "-",
-      roi: initial.roi ?? "-",
-      notes: initial.notes ?? "",
-    });
-  }
-
-  if (request.kind === "content") {
-    return normalize({
-      title: duplicateName(request, initial.title, "New manual content"),
-      type: initial.type ?? "Caption",
-      stage: initial.stage ?? "Ideas",
-      status: request.mode === "duplicate" ? "Draft" : initial.status ?? "Draft",
-      owner: initial.owner ?? "Ngọc Dân",
-      channel: initial.channel ?? "Facebook",
-      campaignId: initial.campaignId ?? "",
-      copy: initial.copy ?? initial.summary ?? "",
-      mediaUrl: initial.mediaUrl ?? "",
-      visualNotes: initial.visualNotes ?? "",
-      copyNotes: initial.copyNotes ?? "",
-      scheduledFor: initial.scheduledFor ?? "",
-      tags: initial.tags ?? "",
-      source: initial.source ?? "manual",
-    });
-  }
-
-  return normalize({
-    title: duplicateName(request, initial.title, "New Social Post"),
-    channel: initial.channel ?? "LinkedIn",
-    status: request.mode === "duplicate" ? "Draft" : initial.status ?? "Queued",
-    scheduledFor: initial.scheduledFor ?? "",
-    owner: initial.owner ?? "Ngọc Dân",
-    campaignId: initial.campaignId ?? "",
-    mediaUrl: initial.mediaUrl ?? "",
-    copy: initial.copy ?? "",
-  });
+  const base = Object.fromEntries(Object.entries(initial).map(([key, value]) => [key, value == null ? "" : String(value)]));
+  if (request.kind === "content") return { contentType: "Caption", status: "Brief", reusable: "false", ...base };
+  if (request.kind === "channel") return { platform: "Facebook", connectionStatus: "Chưa kết nối", ...base };
+  if (request.kind === "campaign") return { status: "Draft", ...base };
+  if (request.kind === "manual-publish") return { publishedUrl: initial.publishedUrl ? String(initial.publishedUrl) : "", note: "", publishResult: "Published" };
+  return base;
 }
 
-function buildPayload(kind: WorkflowKind, form: Record<string, string>) {
-  if (kind === "campaign") {
-    const dates = form.startDate && form.endDate ? `${form.startDate} to ${form.endDate}` : "";
-    return { ...pick(form, ["name", "channel", "status", "startDate", "endDate", "audience", "spend", "conversions", "cpa", "roi", "notes"]), dates };
-  }
+function initialChecklist(request: WorkflowRequest) {
+  return request.kind === "content" && Array.isArray((request.initial as ContentItem | undefined)?.checklistItems)
+    ? [...((request.initial as ContentItem).checklistItems ?? [])] : [];
+}
 
+function buildPayload(kind: WorkflowKind, form: Record<string, string>, checklist: string[]): Record<string, unknown> {
   if (kind === "content") {
-    const scheduledFor = form.scheduledFor || null;
+    const scheduledAt = form.scheduledAt || null;
     return {
-      ...pick(form, ["title", "type", "status", "owner", "channel", "copy", "visualNotes", "copyNotes", "tags", "source"]),
-      stage: contentStageForStatus(form.status),
-      date: scheduledFor ? scheduledFor.slice(0, 10) : "",
-      summary: form.copy,
-      scheduledFor,
-      mediaUrl: emptyToNull(form.mediaUrl),
-      campaignId: emptyToNull(form.campaignId),
+      brandId: form.brandId, channelId: form.channelId || null, campaignId: form.campaignId || null,
+      title: form.title, contentType: form.contentType, type: form.contentType, copy: form.copy,
+      mediaUrl: form.mediaUrl || null, visualPromptNotes: form.visualPromptNotes,
+      visualNotes: form.visualPromptNotes, copyPromptNotes: form.copyPromptNotes,
+      copyNotes: form.copyPromptNotes, status: form.status, stage: form.status,
+      scheduledAt, scheduledFor: scheduledAt, date: scheduledAt ? scheduledAt.slice(0, 10) : null,
+      publishedUrl: form.publishedUrl, learningNote: form.learningNote,
+      reusable: form.reusable === "true", tags: form.tags, checklistItems: checklist,
+      summary: form.copy, source: "manual",
     };
   }
-
-  return { ...pick(form, ["title", "channel", "status", "owner", "copy"]), scheduledFor: form.scheduledFor || null, mediaUrl: emptyToNull(form.mediaUrl), campaignId: emptyToNull(form.campaignId) };
-}
-
-function pick(source: Record<string, string>, keys: string[]) {
-  return keys.reduce<Record<string, string>>((payload, key) => {
-    payload[key] = source[key] ?? "";
-    return payload;
-  }, {});
-}
-
-function normalize(source: Record<string, unknown>) {
-  return Object.fromEntries(Object.entries(source).map(([key, value]) => [key, value == null ? "" : String(value)]));
-}
-
-function duplicateName(request: WorkflowRequest, value: unknown, fallback: string) {
-  const text = String(value ?? fallback);
-  return request.mode === "duplicate" ? `${text} Copy` : text;
-}
-
-function emptyToNull(value?: string) {
-  return value ? value : null;
-}
-
-function toDatetimeLocal(value?: string) {
-  if (!value) {
-    return "";
+  if (kind === "brand") {
+    return pickFormFields(form, [
+      "name", "shortDescription", "positioning", "targetAudience", "brandVoice",
+      "toneMood", "visualStyleNotes", "colors", "defaultCTA", "defaultHashtags",
+      "doList", "dontList", "checklistTemplate", "contentPillars",
+      "promptStyleNotes", "assetNotes",
+    ]);
   }
-
-  return value.endsWith("Z") ? value.slice(0, 16) : value;
+  if (kind === "channel") {
+    return pickFormFields(form, [
+      "brandId", "platform", "pageName", "handle", "url", "connectionStatus",
+      "postingRules", "defaultFormat", "defaultHashtags",
+      "bestPostingTimeNotes", "ctaNotes",
+    ]);
+  }
+  if (kind === "campaign") return { brandId: form.brandId, name: form.name, objective: form.objective, keyMessage: form.keyMessage, status: form.status, startDate: form.startDate || null, endDate: form.endDate || null, dates: form.startDate && form.endDate ? `${form.startDate} to ${form.endDate}` : "", notes: form.notes, channel: "", audience: "", spend: "$0.00", conversions: "0", cpa: "-", roi: "-" };
+  if (kind === "manual-publish") return { status: form.publishResult, publishedUrl: form.publishedUrl, note: form.note };
+  return Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value]));
 }
 
-function contentStageForStatus(status: string) {
-  if (status === "Published" || status === "Ready") return "Ready to Publish";
-  if (status === "Scheduled") return "Review";
-  return "Drafting";
+function pickFormFields(form: Record<string, string>, fields: string[]) {
+  return Object.fromEntries(fields.map((field) => [field, form[field] ?? ""]));
 }
+
+function modalTitle(request: WorkflowRequest) {
+  if (request.kind === "manual-publish") return "Đăng thủ công";
+  const names = { brand: "Brand", channel: "Kênh đăng", campaign: "Chiến dịch", content: "Nội dung" };
+  return request.mode === "edit" ? `Chỉnh sửa ${names[request.kind]}` : `Tạo ${names[request.kind]}`;
+}
+function submitLabel(request: WorkflowRequest) { return request.kind === "manual-publish" ? "Lưu kết quả đăng" : request.mode === "edit" ? "Lưu thay đổi" : "Tạo mới"; }
+function toOption(item: Brand | CampaignRow) { return { value: item.id ?? "", label: item.name }; }
+function channelOption(item: Channel) { return { value: item.id ?? "", label: `${item.platform} · ${item.pageName}` }; }
+function simpleOption(value: string) { return { value, label: value }; }
+function uniqueLines(value: string) { return [...new Set(value.split(/\n|;/).map((line) => line.trim()).filter(Boolean))]; }
+function toDatetimeLocal(value?: string) { return value ? value.replace("Z", "").slice(0, 16) : ""; }

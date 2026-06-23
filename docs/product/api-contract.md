@@ -57,8 +57,11 @@ Frontend API helpers unwrap `payload.data ?? payload`.
 | health | `GET /api/health` | No auth required. |
 | auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | Public session lifecycle endpoints. |
 | bootstrap | `GET /api/bootstrap` | Returns workspace, current user, metrics, and all app collections. |
-| campaigns | `GET/POST /api/campaigns`, `GET/PATCH/DELETE /api/campaigns/:id` | Generic CRUD. |
-| content | `GET/POST /api/content`, `GET/PATCH/DELETE /api/content/:id` | Generic CRUD. |
+| brands | `GET/POST /api/brands`, `GET/PATCH/DELETE /api/brands/:id` | Generic Brand context CRUD. |
+| channels | `GET/POST /api/channels`, `GET/PATCH/DELETE /api/channels/:id` | Generic Brand-scoped Channel CRUD. |
+| campaigns | `GET/POST /api/campaigns`, `GET/PATCH/DELETE /api/campaigns/:id` | Brand-scoped campaign CRUD. |
+| content | `GET/POST /api/content`, `GET/PATCH/DELETE /api/content/:id` | Unified Brand/Channel/Campaign-aware content CRUD. |
+| manual publish | `POST /api/content/:id/manual-publish` | Marks unified Content Published/Failed and appends a PublishLog. |
 | calendar | `GET/POST /api/calendar`, `GET/PATCH/DELETE /api/calendar/:id` | Generic CRUD. |
 | social posts | `GET/POST /api/social-posts`, `GET/PATCH/DELETE /api/social-posts/:id` | Generic CRUD plus publish action. Supports `mediaUrl` as a string or null. |
 | social publish | `POST /api/social-posts/:id/publish` | Updates post, publish log, and notification. |
@@ -71,6 +74,10 @@ Frontend API helpers unwrap `payload.data ?? payload`.
 State lives in `data/app-state.json` by default and can be moved with
 `DATA_FILE_PATH`. The store writes through a temp file and rename to reduce
 partial write risk.
+
+`normalizeState` adds Brand/Channel collections and maps legacy content/social
+records to the unified Content shape in memory. It does not delete legacy
+collections.
 
 The JSON store is acceptable for personal v1. Public customer use requires a
 database-backed repository layer and tenancy boundaries.

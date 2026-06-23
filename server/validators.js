@@ -1,12 +1,62 @@
 import { HttpError } from "./http-helpers.js";
 
 export const resourceDefinitions = {
+  brands: {
+    stateKey: "brands",
+    idPrefix: "brand",
+    requiredFields: ["name"],
+    allowedFields: [
+      "name", "shortDescription", "positioning", "targetAudience", "brandVoice",
+      "toneMood", "visualStyleNotes", "colors", "defaultCTA", "defaultHashtags",
+      "doList", "dontList", "checklistTemplate", "contentPillars",
+      "promptStyleNotes", "assetNotes",
+    ],
+    defaults: {
+      shortDescription: "",
+      positioning: "",
+      targetAudience: "",
+      brandVoice: "",
+      toneMood: "",
+      visualStyleNotes: "",
+      colors: "",
+      defaultCTA: "",
+      defaultHashtags: "",
+      doList: "",
+      dontList: "",
+      checklistTemplate: "",
+      contentPillars: "",
+      promptStyleNotes: "",
+      assetNotes: "",
+    },
+  },
+  channels: {
+    stateKey: "channels",
+    idPrefix: "channel",
+    requiredFields: ["brandId", "platform", "pageName"],
+    allowedFields: [
+      "brandId", "platform", "pageName", "handle", "url", "connectionStatus",
+      "postingRules", "defaultFormat", "defaultHashtags",
+      "bestPostingTimeNotes", "ctaNotes",
+    ],
+    defaults: {
+      handle: "",
+      url: "",
+      connectionStatus: "Chưa kết nối",
+      postingRules: "",
+      defaultFormat: "",
+      defaultHashtags: "",
+      bestPostingTimeNotes: "",
+      ctaNotes: "",
+    },
+  },
   campaigns: {
     stateKey: "campaigns",
     idPrefix: "campaign",
-    requiredFields: ["name", "channel"],
-    allowedFields: ["name", "channel", "status", "dates", "startDate", "endDate", "audience", "spend", "conversions", "cpa", "roi", "notes"],
+    requiredFields: ["brandId", "name"],
+    allowedFields: ["brandId", "name", "objective", "keyMessage", "status", "dates", "startDate", "endDate", "notes", "channel", "audience", "spend", "conversions", "cpa", "roi"],
     defaults: {
+      objective: "",
+      keyMessage: "",
       status: "Draft",
       dates: "",
       startDate: null,
@@ -22,40 +72,44 @@ export const resourceDefinitions = {
   content: {
     stateKey: "contentItems",
     idPrefix: "content",
-    requiredFields: ["title", "type"],
+    requiredFields: ["brandId", "title", "contentType"],
     allowedFields: [
-      "title",
-      "type",
-      "date",
-      "status",
-      "stage",
-      "owner",
-      "channel",
-      "campaignId",
-      "summary",
-      "copy",
-      "mediaUrl",
-      "visualNotes",
-      "copyNotes",
-      "scheduledFor",
-      "tags",
-      "source",
+      "brandId", "channelId", "campaignId", "title", "contentType", "type",
+      "copy", "mediaUrl", "visualPromptNotes", "visualNotes", "copyPromptNotes",
+      "copyNotes", "status", "scheduledAt", "scheduledFor", "publishedUrl",
+      "learningNote", "reusable", "tags", "checklistItems", "date", "stage",
+      "owner", "channel", "summary", "source",
     ],
     defaults: {
-      date: null,
-      status: "Draft",
-      stage: "Ideas",
-      owner: "Unassigned",
-      channel: "Content Studio",
+      brandId: null,
+      channelId: null,
       campaignId: null,
-      summary: "",
+      contentType: "Caption",
       copy: "",
       mediaUrl: null,
+      visualPromptNotes: "",
+      copyPromptNotes: "",
+      status: "Brief",
+      scheduledAt: null,
+      publishedUrl: "",
+      learningNote: "",
+      reusable: false,
+      tags: "",
+      checklistItems: [],
+      date: null,
+      type: "Caption",
+      stage: "Brief",
+      owner: "Unassigned",
+      channel: "",
+      summary: "",
       visualNotes: "",
       copyNotes: "",
       scheduledFor: null,
-      tags: "",
       source: "manual",
+    },
+    fieldTypes: {
+      reusable: ["boolean"],
+      checklistItems: ["array"],
     },
   },
   calendar: {
@@ -110,11 +164,18 @@ export const resourceDefinitions = {
   "publish-logs": {
     stateKey: "publishLogs",
     idPrefix: "publish-log",
-    requiredFields: ["postId", "channel", "status"],
-    allowedFields: ["postId", "channel", "status", "message", "externalPostId"],
+    requiredFields: ["status"],
+    allowedFields: ["postId", "contentId", "channel", "channelId", "status", "message", "note", "externalPostId", "publishedAt", "publishedUrl"],
     defaults: {
+      postId: null,
+      contentId: null,
+      channel: "",
+      channelId: null,
       message: "",
+      note: "",
       externalPostId: null,
+      publishedAt: null,
+      publishedUrl: "",
     },
   },
   notifications: {
@@ -170,8 +231,13 @@ export function validateMutation(resourceName, payload, options = {}) {
   }
 
   for (const [key, value] of Object.entries(sanitized)) {
-    if (value !== null && typeof value !== "string") {
-      throw new HttpError(400, "VALIDATION_ERROR", `Field "${key}" must be a string or null.`);
+    const allowedTypes = definition.fieldTypes?.[key] ?? ["string", "null"];
+    const valueType = Array.isArray(value) ? "array" : value === null ? "null" : typeof value;
+    if (!allowedTypes.includes(valueType)) {
+      throw new HttpError(400, "VALIDATION_ERROR", `Field "${key}" has an invalid type.`);
+    }
+    if (valueType === "array" && !value.every((item) => typeof item === "string")) {
+      throw new HttpError(400, "VALIDATION_ERROR", `Field "${key}" must contain strings only.`);
     }
   }
 

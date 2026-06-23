@@ -3,13 +3,12 @@
 ## Core Loop
 
 ```text
-Campaign or idea
-  -> content item
-  -> calendar/social post
-  -> approval or queued state
-  -> publish attempt
-  -> publish log + notification
-  -> dashboard/analytics feedback
+Brand
+  -> Content
+  -> Checklist
+  -> Schedule
+  -> Manual Publish
+  -> Published URL / Learning note
 ```
 
 The app should help the operator answer three questions quickly:
@@ -18,66 +17,57 @@ The app should help the operator answer three questions quickly:
 2. What is scheduled or queued?
 3. What failed and how do I recover?
 
+## Brand And Channel Operations
+
+Brand stores positioning, audience, voice, tone, visual direction, CTA,
+hashtags, do/don't guidance, checklist template, content pillars, prompt style,
+and asset notes. Channel belongs to one Brand and stores platform/page
+information plus manual posting guidance.
+
+Connection status is informational in this release. The primary UI does not
+pretend provider OAuth or automatic publishing is active.
+
 ## Campaign Operations
 
-Campaigns are stored under the `campaigns` resource. Required fields are
-`name` and `channel`. The UI supports create, edit, duplicate, delete, table
-selection, and detail inspection.
-
-Campaign rows are intentionally string-shaped because the current API keeps a
-simple JSON store and avoids schema migration complexity. Future database work
-should normalize money, dates, and metric fields.
+Campaigns belong to one Brand and store objective, key message, dates, status,
+and notes. Campaign progress is derived from related Content statuses rather
+than fake ROI or revenue.
 
 ## Content Workflow
 
-Content items are stored under the `content` resource with workflow fields:
+Content items are stored under the `content` resource and are the single source
+of truth for the full lifecycle:
 
-- `stage`
-- `status`
-- `owner`
-- `channel`
+- `brandId`
+- `channelId`
 - `campaignId`
-- `summary`
+- `contentType`
 - `copy`
 - `mediaUrl`
-- `visualNotes`
-- `copyNotes`
-- `scheduledFor`
+- `visualPromptNotes`
+- `copyPromptNotes`
+- `status`
+- `scheduledAt`
+- `publishedUrl`
+- `learningNote`
+- `reusable`
 - `tags`
-- `source`
+- `checklistItems`
 
-The Content Studio page groups items into workflow columns. Review and publish
-states may be updated through row actions and the action workflow modal.
-
-Manual content is the primary creation path. An operator can paste copy created
-elsewhere, add a public image/video URL, keep visual and copy prompts as notes,
-assign a campaign, set Draft/Ready/Scheduled/Published status, and reopen the
-item from the library or calendar. Items with `scheduledFor` appear in the
-Content Calendar.
+Status moves through Brief, Draft, Review, Ready, Scheduled, then Published or
+Failed. Each status exposes one useful next action. Calendar, campaign detail,
+and publishing queue are filtered views of Content, not separate records.
 
 Binary file upload is not implemented yet because the app has no object
 storage. The composer shows an upload placeholder and persists asset URLs in
 the JSON backend.
 
-## Social Posting
+## Manual Publishing
 
-Social posts are stored under `social-posts`. Current publishing fields:
-
-- `status`
-- `publishStatus`
-- `scheduledFor`
-- `copy`
-- `mediaUrl`
-- `campaignId`
-- `lastPublishError`
-- `publishedAt`
-- `externalPostId`
-
-Current composer requirements:
-
-- Text input.
-- Image/media URL input persisted through the backend.
-- Schedule datetime input.
+Scheduled Content can be opened in the manual publish flow. The operator can
+copy the caption, open the media URL, open the Channel URL, paste the published
+URL, and mark the Content Published or Failed. This updates Content and appends
+a PublishLog.
 
 ## Integration Health
 
@@ -109,11 +99,15 @@ rewriting historical publish evidence.
 | LinkedIn | Demo adapter only. |
 | X | Demo adapter only. |
 
+## Legacy Provider Boundary
+
+The existing `social-posts` and provider publish routes remain for backward
+compatibility and existing tests. They are not used by the six-area primary UI.
+Authentication and Facebook provider behavior were not changed by US-013.
+
 ## Next Operational Slice
 
-The next most valuable slice is to make scheduled publishing real:
-
-- Add uploaded asset references for real media files.
-- Add a scheduler/worker loop.
-- Retry failed posts with clear error history.
-- Add Facebook image post support, not just feed text.
+- Add object storage for real media uploads.
+- Add durable database persistence before customer use.
+- Add provider OAuth and automatic publishing only after manual operations are
+  stable.

@@ -2,7 +2,7 @@ import { HttpError, parseJsonBody, sendJson } from "./http-helpers.js";
 import { serveSpaFallback, serveStaticAsset } from "./static-files.js";
 import { validateMutation } from "./validators.js";
 
-const resourceRouteNames = new Set(["campaigns", "content", "calendar", "social-posts", "integrations", "publish-logs", "notifications"]);
+const resourceRouteNames = new Set(["brands", "channels", "campaigns", "content", "calendar", "social-posts", "integrations", "publish-logs", "notifications"]);
 
 export function createRouter({ store, port, auth }) {
   return async function route(req, res) {
@@ -65,6 +65,16 @@ export function createRouter({ store, port, auth }) {
 
     const recordId = pathSegments[2];
     const subAction = pathSegments[3];
+
+    if (resourceName === "content" && recordId && subAction === "manual-publish" && method === "POST" && pathSegments.length === 4) {
+      const payload = await parseJsonBody(req);
+      const result = await store.completeManualPublish(recordId, payload);
+      if (!result) {
+        throw new HttpError(404, "NOT_FOUND", "Record not found.");
+      }
+      sendJson(req, res, 200, result);
+      return;
+    }
 
     if (resourceName === "social-posts" && recordId && subAction === "publish" && method === "POST" && pathSegments.length === 4) {
       const result = await store.publishSocialPost(recordId);

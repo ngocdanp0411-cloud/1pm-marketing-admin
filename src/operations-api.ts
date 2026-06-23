@@ -1,18 +1,24 @@
-import type { CampaignRow, ChannelIntegration, ContentItem, OperationsNotification, PublishLog, SocialPost } from "./types";
+import type {
+  Brand,
+  CampaignRow,
+  Channel,
+  ContentItem,
+  OperationsNotification,
+  PublishLog,
+} from "./types";
 
-type ResourceName = "campaigns" | "content" | "social-posts" | "integrations" | "notifications";
+type ResourceName = "brands" | "channels" | "campaigns" | "content" | "notifications";
+type ResourceRecordMap = {
+  brands: Brand;
+  channels: Channel;
+  campaigns: CampaignRow;
+  content: ContentItem;
+  notifications: OperationsNotification;
+};
 
 export interface AuthStatus {
   authenticated: boolean;
 }
-
-type ResourceRecordMap = {
-  campaigns: CampaignRow;
-  content: ContentItem;
-  "social-posts": SocialPost;
-  integrations: ChannelIntegration;
-  notifications: OperationsNotification;
-};
 
 export interface ApiOverviewMetric {
   key: string;
@@ -22,57 +28,38 @@ export interface ApiOverviewMetric {
 }
 
 export interface OperationsBootstrap {
-  workspace?: {
-    name: string;
-    plan: string;
-  };
-  currentUser?: {
-    name: string;
-    role: string;
-    email: string;
-  };
+  workspace?: { name: string; timezone?: string; plan?: string };
+  currentUser?: { name: string; role: string; email: string };
   overviewMetrics?: ApiOverviewMetric[];
+  brands?: Brand[];
+  channels?: Channel[];
   campaigns?: CampaignRow[];
   contentItems?: ContentItem[];
-  calendarEvents?: unknown[];
-  brandAssets?: unknown[];
-  teamMembers?: unknown[];
-  integrations?: ChannelIntegration[];
   publishLogs?: PublishLog[];
   notifications?: OperationsNotification[];
-  socialQueue?: SocialPost[];
-  localListings?: unknown[];
 }
 
-export async function fetchOperationsBootstrap(signal?: AbortSignal): Promise<OperationsBootstrap> {
-  return apiRequest<OperationsBootstrap>("/api/bootstrap", { signal });
+export function fetchOperationsBootstrap(signal?: AbortSignal): Promise<OperationsBootstrap> {
+  return apiRequest("/api/bootstrap", { signal });
 }
 
 export function fetchAuthStatus(signal?: AbortSignal): Promise<AuthStatus> {
-  return apiRequest<AuthStatus>("/api/auth/me", { signal });
+  return apiRequest("/api/auth/me", { signal });
 }
 
 export function loginWithPassword(password: string): Promise<AuthStatus> {
-  return apiRequest<AuthStatus>("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ password }),
-  });
+  return apiRequest("/api/auth/login", { method: "POST", body: JSON.stringify({ password }) });
 }
 
 export function logoutSession(): Promise<AuthStatus> {
-  return apiRequest<AuthStatus>("/api/auth/logout", {
-    method: "POST",
-  });
+  return apiRequest("/api/auth/logout", { method: "POST" });
 }
 
 export function createRecord<TResource extends ResourceName>(
   resourceName: TResource,
   payload: Partial<ResourceRecordMap[TResource]>,
 ): Promise<ResourceRecordMap[TResource]> {
-  return apiRequest<ResourceRecordMap[TResource]>(`/api/${resourceName}`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  return apiRequest(`/api/${resourceName}`, { method: "POST", body: JSON.stringify(payload) });
 }
 
 export function updateRecord<TResource extends ResourceName>(
@@ -80,26 +67,23 @@ export function updateRecord<TResource extends ResourceName>(
   id: string,
   payload: Partial<ResourceRecordMap[TResource]>,
 ): Promise<ResourceRecordMap[TResource]> {
-  return apiRequest<ResourceRecordMap[TResource]>(`/api/${resourceName}/${encodeURIComponent(id)}`, {
+  return apiRequest(`/api/${resourceName}/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
 }
 
 export function deleteRecord(resourceName: ResourceName, id: string): Promise<{ id: string; deleted: true }> {
-  return apiRequest<{ id: string; deleted: true }>(`/api/${resourceName}/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
+  return apiRequest(`/api/${resourceName}/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
-export function publishSocialPost(id: string): Promise<{
-  post: SocialPost;
-  log: PublishLog;
-  notification: OperationsNotification;
-  integration: ChannelIntegration | null;
-}> {
-  return apiRequest(`/api/social-posts/${encodeURIComponent(id)}/publish`, {
+export function completeManualPublish(
+  id: string,
+  payload: { status: "Published" | "Failed"; publishedUrl?: string; note?: string },
+): Promise<{ content: ContentItem; log: PublishLog }> {
+  return apiRequest(`/api/content/${encodeURIComponent(id)}/manual-publish`, {
     method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -107,17 +91,11 @@ async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     ...init,
     credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json",
-      ...init.headers,
-    },
+    headers: { "Content-Type": "application/json", ...init.headers },
   });
-
   if (!response.ok) {
-    const message = await readErrorMessage(response);
-    throw new Error(message || `Operations API returned ${response.status}`);
+    throw new Error(await readErrorMessage(response) || `Operations API returned ${response.status}`);
   }
-
   const payload = await response.json();
   return (payload?.data ?? payload) as T;
 }

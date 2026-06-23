@@ -1,16 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
-export type PageKey =
-  | "overview"
-  | "content-studio"
-  | "content-calendar"
-  | "ai-generator"
-  | "campaigns"
-  | "analytics"
-  | "brand-assets"
-  | "social-posting"
-  | "local-marketing"
-  | "settings";
+export type PageKey = "today" | "content" | "calendar" | "campaigns" | "brands" | "channels" | "settings";
+export type ContentStatus = "Brief" | "Draft" | "Review" | "Ready" | "Scheduled" | "Published" | "Failed";
 
 export interface NavItem {
   key: PageKey;
@@ -21,61 +12,108 @@ export interface NavItem {
 export interface Metric {
   label: string;
   value: string;
-  trend: string;
+  context: string;
   icon: LucideIcon;
   tone?: "good" | "warn" | "bad";
 }
 
-export interface CampaignRow {
+export interface Brand {
   id?: string;
   name: string;
-  channel: string;
+  shortDescription?: string;
+  positioning?: string;
+  targetAudience?: string;
+  brandVoice?: string;
+  toneMood?: string;
+  visualStyleNotes?: string;
+  colors?: string;
+  defaultCTA?: string;
+  defaultHashtags?: string;
+  doList?: string;
+  dontList?: string;
+  checklistTemplate?: string;
+  contentPillars?: string;
+  promptStyleNotes?: string;
+  assetNotes?: string;
+}
+
+export interface Channel {
+  id?: string;
+  brandId: string;
+  platform: string;
+  pageName: string;
+  handle?: string;
+  url?: string;
+  connectionStatus?: string;
+  postingRules?: string;
+  defaultFormat?: string;
+  defaultHashtags?: string;
+  bestPostingTimeNotes?: string;
+  ctaNotes?: string;
+}
+
+export interface CampaignRow {
+  id?: string;
+  brandId: string;
+  name: string;
+  objective?: string;
+  keyMessage?: string;
   status: string;
-  dates: string;
   startDate?: string | null;
   endDate?: string | null;
-  audience: string;
-  spend: string;
-  conversions: string;
-  cpa: string;
-  roi: string;
   notes?: string;
+  dates?: string;
+  channel?: string;
+  audience?: string;
+  spend?: string;
+  conversions?: string;
+  cpa?: string;
+  roi?: string;
 }
 
 export interface ContentItem {
   id?: string;
+  brandId: string;
+  channelId?: string | null;
+  campaignId?: string | null;
   title: string;
-  type: string;
-  date: string;
-  status?: string;
+  contentType: string;
+  type?: string;
+  copy?: string;
+  mediaUrl?: string | null;
+  visualPromptNotes?: string;
+  visualNotes?: string;
+  copyPromptNotes?: string;
+  copyNotes?: string;
+  status: ContentStatus | string;
+  scheduledAt?: string | null;
+  scheduledFor?: string | null;
+  publishedUrl?: string;
+  learningNote?: string;
+  reusable?: boolean;
+  tags?: string;
+  checklistItems?: string[];
+  date?: string | null;
   stage?: string;
   owner?: string;
   channel?: string;
-  campaignId?: string | null;
   summary?: string;
-  copy?: string;
-  mediaUrl?: string | null;
-  visualNotes?: string;
-  copyNotes?: string;
-  scheduledFor?: string | null;
-  tags?: string;
-  source?: "manual" | "ai" | string;
+  source?: string;
 }
 
-export interface SocialPost {
-  id?: string;
-  title: string;
-  channel: string;
+export interface PublishLog {
+  id: string;
+  postId?: string | null;
+  contentId?: string | null;
+  channel?: string;
+  channelId?: string | null;
   status: string;
-  publishStatus?: "Draft" | "Scheduled" | "Publishing" | "Published" | "Failed" | "Cancelled" | string;
-  scheduledFor?: string | null;
-  owner?: string;
-  copy?: string;
-  mediaUrl?: string | null;
-  campaignId?: string | null;
-  lastPublishError?: string;
-  publishedAt?: string | null;
+  message?: string;
+  note?: string;
   externalPostId?: string | null;
+  publishedAt?: string | null;
+  publishedUrl?: string;
+  createdAt: string;
 }
 
 export interface ChannelIntegration {
@@ -83,23 +121,13 @@ export interface ChannelIntegration {
   provider: string;
   name: string;
   accountName: string;
-  status: "connected" | "needs_setup" | "attention" | "disconnected" | string;
+  status: string;
   pageId?: string | null;
   permissions: string;
-  tokenHealth: "healthy" | "missing" | "expires_soon" | "invalid" | string;
-  setupMode: "demo" | "live" | string;
+  tokenHealth: string;
+  setupMode: string;
   lastSync?: string | null;
   connectedAt?: string | null;
-}
-
-export interface PublishLog {
-  id: string;
-  postId: string;
-  channel: string;
-  status: "published" | "failed" | "publishing" | string;
-  message: string;
-  externalPostId?: string | null;
-  createdAt: string;
 }
 
 export interface OperationsNotification {
@@ -107,8 +135,8 @@ export interface OperationsNotification {
   type: string;
   title: string;
   message: string;
-  severity: "info" | "success" | "warning" | "error" | string;
-  status: "read" | "unread" | string;
+  severity: string;
+  status: string;
   relatedId?: string | null;
   createdAt: string;
 }

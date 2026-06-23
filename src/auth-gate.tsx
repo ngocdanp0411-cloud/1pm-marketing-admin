@@ -23,7 +23,7 @@ export function AuthGate({ children }: AuthGateProps) {
       .then((status) => setAuthState(status.authenticated ? "authenticated" : "unauthenticated"))
       .catch((requestError) => {
         if (controller.signal.aborted) return;
-        setError(requestError instanceof Error ? requestError.message : "Could not check authentication.");
+        setError(requestError instanceof Error ? requestError.message : "Không thể kiểm tra phiên đăng nhập.");
         setAuthState("unauthenticated");
       });
 
@@ -40,13 +40,13 @@ export function AuthGate({ children }: AuthGateProps) {
     try {
       const status = await loginWithPassword(password);
       if (!status.authenticated) {
-        throw new Error("Login did not create an authenticated session.");
+        throw new Error("Không tạo được phiên đăng nhập.");
       }
 
       setPassword("");
       setAuthState("authenticated");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Login failed.");
+      setError(requestError instanceof Error ? requestError.message : "Đăng nhập thất bại.");
     } finally {
       setLoginBusy(false);
     }
@@ -62,7 +62,7 @@ export function AuthGate({ children }: AuthGateProps) {
       setError("");
       setAuthState("unauthenticated");
     } catch {
-      window.alert("Could not log out. Please check the connection and try again.");
+      window.alert("Không thể đăng xuất. Hãy kiểm tra kết nối và thử lại.");
     } finally {
       setLogoutBusy(false);
     }
@@ -73,7 +73,7 @@ export function AuthGate({ children }: AuthGateProps) {
       <main className="auth-screen" aria-busy="true">
         <section className="auth-card auth-loading" role="status">
           <LoaderCircle className="auth-spinner" />
-          <strong>Checking secure session...</strong>
+          <strong>Đang kiểm tra phiên đăng nhập…</strong>
         </section>
       </main>
     );
@@ -88,12 +88,12 @@ export function AuthGate({ children }: AuthGateProps) {
             <span className="auth-lock"><LockKeyhole /></span>
             <div>
               <h1>1PM Marketing Admin</h1>
-              <p>Enter the internal admin password to continue.</p>
+              <p>Nhập mật khẩu quản trị nội bộ để tiếp tục.</p>
             </div>
           </div>
           <form className="auth-form" onSubmit={handleLogin}>
             <label>
-              <span>Password</span>
+              <span>Mật khẩu</span>
               <input
                 autoComplete="current-password"
                 autoFocus
@@ -107,7 +107,7 @@ export function AuthGate({ children }: AuthGateProps) {
             {error && <p className="auth-error" role="alert">{error}</p>}
             <button className="primary-btn" disabled={!password || loginBusy} type="submit">
               {loginBusy ? <LoaderCircle className="auth-spinner" /> : <LogIn />}
-              {loginBusy ? "Signing in..." : "Login"}
+              {loginBusy ? "Đang đăng nhập…" : "Đăng nhập"}
             </button>
           </form>
         </section>

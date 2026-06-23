@@ -33,22 +33,25 @@ Railway runs the same Node service for API and static frontend.
 
 Core files:
 
-- `src/main.tsx` mounts the app and i18n provider.
-- `src/app.tsx` owns page routing state, bootstrap state, mutations, and page
-  composition.
+- `src/main.tsx` mounts the app.
+- `src/app.tsx` owns hash-backed page state, bootstrap state, mutations, and
+  workflow orchestration.
 - `src/components.tsx` owns shell, sidebar, topbar, search, user card, and
   shared visual components.
-- `src/action-workflow.tsx` owns campaign/content/social create/edit/duplicate
-  modal behavior.
+- `src/action-workflow.tsx` owns Brand, Channel, Campaign, unified Content, and
+  manual publish modal behavior.
+- `src/*-page.tsx` files own the six primary operating pages.
+- `src/content-operating-card.tsx` renders the shared Content action surface.
+- `src/marketing-helpers.ts` owns Brand/Channel/Campaign labels, scheduling, and
+  next-action helpers.
 - `src/auth-gate.tsx` checks the cookie session and owns login/logout UI state.
 - `src/operations-api.ts` owns API calls.
 - `src/types.ts` owns shared frontend types.
-- `src/i18n.tsx` owns Vietnamese/English translation.
 - `src/styles.css` owns visual design and responsive layout.
 
-Constraint: `src/app.tsx` is large and should be split when a future feature
-touches more than one page. Avoid adding more page-local complexity to it unless
-the change is tiny.
+The primary frontend reads Brand, Channel, Campaign, Content, and PublishLog.
+Legacy calendar/social resources remain server-compatible but are not separate
+primary UI workflows.
 
 ## Backend Boundaries
 
@@ -70,6 +73,9 @@ Core files:
 `AppStateStore` is the single write owner for `data/app-state.json`. It keeps an
 in-memory state object and serializes writes through a promise chain with a
 temp-file rename.
+
+At initialization, normalization adds missing Brand/Channel relationships and
+maps legacy records into the unified Content view without destructive migration.
 
 Do not write `data/app-state.json` directly from other server modules. Add store
 methods instead.

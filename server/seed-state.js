@@ -1,4 +1,4 @@
-import { seedCampaigns, seedContentItems } from "./seed-primary-records.js";
+import { seedBrands, seedCampaigns, seedChannels, seedContentItems } from "./seed-primary-records.js";
 import {
   seedBrandAssets,
   seedCalendarEvents,
@@ -26,6 +26,8 @@ export function createSeedState() {
       email: "ngocdanp0411@gmail.com",
       role: "Admin",
     },
+    brands: seedBrands,
+    channels: seedChannels,
     campaigns: seedCampaigns,
     contentItems: seedContentItems,
     calendarEvents: seedCalendarEvents,
