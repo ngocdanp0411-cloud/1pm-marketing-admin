@@ -328,7 +328,7 @@ function normalizeState(state) {
     publishedAt: null,
     externalPostId: null,
     ...post,
-  }));
+  })).filter((post) => !isDemoSocialPost(post));
   nextState.socialQueue = alignPostsWithPublishLogs(nextState.socialQueue, nextState.publishLogs);
 
   return nextState;
@@ -363,10 +363,12 @@ function normalizeCampaigns(campaigns, fallback, brands) {
 function normalizeContentItems(contentItems, socialQueue, fallback, brands, channels) {
   const brandId = brands[0]?.id ?? null;
   const source = normalizeCollection(contentItems, fallback);
-  const normalized = source.map((item) => normalizeContentItem(item, brandId, channels));
+  const normalized = source
+    .filter((item) => !isDemoContentItem(item))
+    .map((item) => normalizeContentItem(item, brandId, channels));
   const existingIds = new Set(normalized.map((item) => item.id));
   const legacySocial = Array.isArray(socialQueue)
-    ? socialQueue.filter((item) => !existingIds.has(item.id)).map((item) => normalizeContentItem({
+    ? socialQueue.filter((item) => !existingIds.has(item.id) && !isDemoSocialPost(item)).map((item) => normalizeContentItem({
       ...item,
       contentType: "Caption",
       type: "Caption",
@@ -374,6 +376,26 @@ function normalizeContentItems(contentItems, socialQueue, fallback, brands, chan
     }, brandId, channels))
     : [];
   return [...normalized, ...legacySocial];
+}
+
+function isDemoContentItem(item) {
+  const demoIds = new Set([
+    "content-video-summer",
+    "content-email-launch",
+    "content-report-trends",
+    "content-case-study-acme",
+    "content-demo-video",
+  ]);
+  return demoIds.has(item?.id);
+}
+
+function isDemoSocialPost(item) {
+  const demoIds = new Set([
+    "social-linkedin-report",
+    "social-instagram-demo",
+    "social-x-launch",
+  ]);
+  return demoIds.has(item?.id);
 }
 
 function normalizeContentItem(item, brandId, channels) {

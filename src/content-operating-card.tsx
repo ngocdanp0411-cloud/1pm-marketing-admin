@@ -1,6 +1,6 @@
 import { CalendarClock, Edit3, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { StatusPill } from "./components";
-import { brandName, campaignName, channelName, formatDateTime, nextAction } from "./marketing-helpers";
+import { brandName, campaignName, channelName, formatDateTime } from "./marketing-helpers";
 import type { Brand, CampaignRow, Channel, ContentItem } from "./types";
 
 interface Props {
@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function ContentOperatingCard({ item, brands, channels, campaigns, onEdit, onNext, compact = false }: Props) {
-  const action = nextAction(item);
+  const canPublishManually = item.status === "Scheduled";
   return (
     <article className={`content-card ${compact ? "compact" : ""}`}>
       <div className="content-thumb">
@@ -35,7 +35,7 @@ export function ContentOperatingCard({ item, brands, channels, campaigns, onEdit
         {item.publishedUrl && <a className="published-link" href={item.publishedUrl} target="_blank" rel="noreferrer"><ExternalLink />Xem bài đã đăng</a>}
         <div className="content-actions">
           <button className="secondary-btn" onClick={() => onEdit(item)}><Edit3 />Chỉnh sửa</button>
-          <button className="primary-btn" onClick={() => onNext(item)}>{action.label}</button>
+          {canPublishManually && <button className="primary-btn" onClick={() => onNext(item)}>Đăng thủ công</button>}
         </div>
       </div>
     </article>

@@ -13,7 +13,8 @@ Implemented surfaces:
 
 - `Hôm nay` action inbox for drafts, reviews, ready items, scheduled work,
   overdue work, and failed publishing.
-- One unified Content library from Brief through Published or Failed.
+- One unified Content library for manually created, drafted, scheduled, and
+  published posts.
 - Brand-aware composer for pasted copy, media URLs/uploads, prompts/notes,
   schedule, preview, learning notes, and reusable content.
 - Content Calendar derived directly from scheduled Content records.

@@ -91,6 +91,8 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     assert.ok(Array.isArray(bootstrap.data.notifications));
     assert.ok(!bootstrap.data.teamMembers?.some((item) => ["Olivia Morgan", "Liam Carter", "Sophia Bennett", "Noah Williams", "Ava Martinez"].includes(item.name)));
     assert.ok(!bootstrap.data.notifications.some((item) => ["Reconnect X", "Social approval needed"].includes(item.title)));
+    assert.ok(!bootstrap.data.contentItems.some((item) => ["content-video-summer", "content-email-launch", "content-report-trends", "content-case-study-acme", "content-demo-video"].includes(item.id)));
+    assert.ok(!bootstrap.data.socialQueue.some((item) => ["social-linkedin-report", "social-instagram-demo", "social-x-launch"].includes(item.id)));
 
     const createdBrand = await api.post("/api/brands", {
       name: "API Smoke Brand",

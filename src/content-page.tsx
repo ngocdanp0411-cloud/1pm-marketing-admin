@@ -40,7 +40,7 @@ export function ContentPage(props: Props) {
         <Filter value={campaignId} onChange={setCampaignId} options={[["all", "Tất cả chiến dịch"], ...filteredCampaigns.map((item) => [item.id ?? "", item.name])]} />
         <Filter value={status} onChange={setStatus} options={[["all", "Tất cả trạng thái"], ...contentStatuses.map((item) => [item, item])]} />
       </div>
-      <div className="result-summary"><strong>{items.length} nội dung</strong><span>Một nguồn dữ liệu từ brief đến published.</span></div>
+      <div className="result-summary"><strong>{items.length} nội dung</strong><span>Các bài anh đã tạo, lưu nháp hoặc lên lịch.</span></div>
       {items.length ? <div className="content-list">{items.map((item) => (
         <div className="content-list-item" key={item.id ?? item.title}>
           <ContentOperatingCard {...props} item={item} />

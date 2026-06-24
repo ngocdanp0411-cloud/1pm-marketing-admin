@@ -12,7 +12,7 @@ export const navItems: NavItem[] = [
 
 export const pageMeta = {
   today: ["Hôm nay", "Việc marketing cần anh xử lý tiếp theo."],
-  content: ["Nội dung", "Một thư viện cho toàn bộ vòng đời nội dung."],
+  content: ["Nội dung", "Các bài đã tạo, lưu nháp và lên lịch."],
   calendar: ["Lịch", "Những nội dung đã có ngày giờ đăng."],
   campaigns: ["Chiến dịch", "Nhóm nội dung theo mục tiêu và thông điệp."],
   brands: ["Brand", "Bối cảnh giúp mọi nội dung giữ đúng định hướng."],
