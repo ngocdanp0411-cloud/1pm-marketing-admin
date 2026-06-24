@@ -5,7 +5,6 @@
 ```text
 Brand
   -> Content
-  -> Checklist
   -> Schedule
   -> Manual Publish
   -> Published URL / Learning note
@@ -52,7 +51,8 @@ of truth for the full lifecycle:
 - `learningNote`
 - `reusable`
 - `tags`
-- `checklistItems`
+- `checklistItems` for backward-compatible records; the current composer no
+  longer shows a manual self-check checklist.
 
 Status moves through Brief, Draft, Review, Ready, Scheduled, then Published or
 Failed. Each status exposes one useful next action. Calendar, campaign detail,

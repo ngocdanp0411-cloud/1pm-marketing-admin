@@ -1,5 +1,5 @@
 import { AlertCircle, CalendarClock, Check, Clipboard, ExternalLink, Eye, LoaderCircle, Upload, X } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { contentStatuses, contentTypeOptions, platformOptions } from "./data";
 import { uploadMediaFile } from "./operations-api";
 import type { Brand, CampaignRow, Channel, ContentItem } from "./types";
@@ -28,7 +28,6 @@ export function ActionWorkflowModal(props: Props) {
   const titleId = useId();
   const modalRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState(() => buildInitialForm(props.request));
-  const [checklist, setChecklist] = useState<string[]>(() => initialChecklist(props.request));
   const [mediaUploading, setMediaUploading] = useState(false);
   const [mediaUploadError, setMediaUploadError] = useState("");
   const selectedBrand = props.brands.find((brand) => brand.id === form.brandId);
@@ -37,7 +36,6 @@ export function ActionWorkflowModal(props: Props) {
 
   useEffect(() => {
     setForm(buildInitialForm(props.request));
-    setChecklist(initialChecklist(props.request));
     setMediaUploading(false);
     setMediaUploadError("");
   }, [props.request]);
@@ -51,17 +49,8 @@ export function ActionWorkflowModal(props: Props) {
     return () => { document.body.style.overflow = previous; window.removeEventListener("keydown", close); };
   }, [props.busy, props.onClose]);
 
-  const checklistOptions = useMemo(() => {
-    const channel = brandChannels.find((item) => item.id === form.channelId);
-    return uniqueLines(`${selectedBrand?.checklistTemplate ?? ""}\n${channel?.postingRules ?? ""}`);
-  }, [brandChannels, form.channelId, selectedBrand]);
-
   function update(field: string, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
-  }
-
-  function toggleChecklist(item: string) {
-    setChecklist((current) => current.includes(item) ? current.filter((value) => value !== item) : [...current, item]);
   }
 
   async function uploadMedia(file: File) {
@@ -79,7 +68,7 @@ export function ActionWorkflowModal(props: Props) {
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    props.onSubmit(props.request, buildPayload(props.request.kind, form, checklist));
+    props.onSubmit(props.request, buildPayload(props.request.kind, form));
   }
 
   const submitBlocked = props.busy
@@ -105,7 +94,7 @@ export function ActionWorkflowModal(props: Props) {
           <div className="composer-layout">
             <div className="composer-form">
               <Section title="A. Bài này thuộc đâu?">
-                <Select label="Brand" value={form.brandId} options={props.brands.map(toOption)} onChange={(value) => { update("brandId", value); update("channelId", ""); update("campaignId", ""); setChecklist([]); }} required />
+                <Select label="Brand" value={form.brandId} options={props.brands.map(toOption)} onChange={(value) => { update("brandId", value); update("channelId", ""); update("campaignId", ""); }} required />
                 <Select label="Kênh / Page" value={form.channelId} options={brandChannels.map(channelOption)} onChange={(value) => update("channelId", value)} empty="Chưa chọn kênh" />
                 <Select label="Chiến dịch" value={form.campaignId} options={brandCampaigns.map(toOption)} onChange={(value) => update("campaignId", value)} empty="Không thuộc chiến dịch" />
                 <Select label="Loại nội dung" value={form.contentType} options={contentTypeOptions.map(simpleOption)} onChange={(value) => update("contentType", value)} />
@@ -129,13 +118,8 @@ export function ActionWorkflowModal(props: Props) {
                 <Field label="Ngày giờ đăng" type="datetime-local" value={toDatetimeLocal(form.scheduledAt)} onChange={(value) => update("scheduledAt", value)} />
                 <Field label="URL bài đã đăng" type="url" value={form.publishedUrl} onChange={(value) => update("publishedUrl", value)} />
               </Section>
-              <Section title="D. Đã đạt chuẩn chưa?">
-                <div className="checklist-field full">
-                  {checklistOptions.length ? checklistOptions.map((item) => (
-                    <label key={item}><input type="checkbox" checked={checklist.includes(item)} onChange={() => toggleChecklist(item)} /><span>{item}</span></label>
-                  )) : <p>Brand chưa có checklist. Anh có thể bổ sung trong trang Brand.</p>}
-                </div>
-                <Field label="Learning note" value={form.learningNote} onChange={(value) => update("learningNote", value)} multiline full />
+              <Section title="D. Ghi chú vận hành">
+                <Field label="Ghi chú rút kinh nghiệm" value={form.learningNote} onChange={(value) => update("learningNote", value)} multiline full />
                 <label className="toggle-field full"><input type="checkbox" checked={form.reusable === "true"} onChange={(event) => update("reusable", String(event.target.checked))} /><span>Có thể tái sử dụng nội dung này</span></label>
               </Section>
             </div>
@@ -304,7 +288,7 @@ function ContentPreview({ form, brand }: { form: Record<string, string>; brand?:
 }
 
 function BrandContext({ brand }: { brand?: Brand }) {
-  if (!brand) return <aside className="brand-context empty"><strong>Brand Context</strong><p>Chọn Brand trước để xem voice, visual, CTA và checklist.</p></aside>;
+  if (!brand) return <aside className="brand-context empty"><strong>Brand Context</strong><p>Chọn Brand trước để xem voice, visual, CTA và hướng dẫn thương hiệu.</p></aside>;
   const rows = [
     ["Brand Voice", brand.brandVoice], ["Tone & Mood", brand.toneMood],
     ["Visual", brand.visualStyleNotes], ["CTA", brand.defaultCTA],
@@ -346,12 +330,7 @@ function buildInitialForm(request: WorkflowRequest) {
   return base;
 }
 
-function initialChecklist(request: WorkflowRequest) {
-  return request.kind === "content" && Array.isArray((request.initial as ContentItem | undefined)?.checklistItems)
-    ? [...((request.initial as ContentItem).checklistItems ?? [])] : [];
-}
-
-function buildPayload(kind: WorkflowKind, form: Record<string, string>, checklist: string[]): Record<string, unknown> {
+function buildPayload(kind: WorkflowKind, form: Record<string, string>): Record<string, unknown> {
   if (kind === "content") {
     const scheduledAt = form.scheduledAt || null;
     return {
@@ -362,7 +341,7 @@ function buildPayload(kind: WorkflowKind, form: Record<string, string>, checklis
       copyNotes: form.copyPromptNotes, status: form.status, stage: form.status,
       scheduledAt, scheduledFor: scheduledAt, date: scheduledAt ? scheduledAt.slice(0, 10) : null,
       publishedUrl: form.publishedUrl, learningNote: form.learningNote,
-      reusable: form.reusable === "true", tags: form.tags, checklistItems: checklist,
+      reusable: form.reusable === "true", tags: form.tags, checklistItems: [],
       summary: form.copy, source: "manual",
     };
   }
@@ -399,7 +378,6 @@ function submitLabel(request: WorkflowRequest) { return request.kind === "manual
 function toOption(item: Brand | CampaignRow) { return { value: item.id ?? "", label: item.name }; }
 function channelOption(item: Channel) { return { value: item.id ?? "", label: `${item.platform} · ${item.pageName}` }; }
 function simpleOption(value: string) { return { value, label: value }; }
-function uniqueLines(value: string) { return [...new Set(value.split(/\n|;/).map((line) => line.trim()).filter(Boolean))]; }
 function toDatetimeLocal(value?: string) { return value ? value.replace("Z", "").slice(0, 16) : ""; }
 function splitTags(value?: string) { return (value ?? "").split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 6); }
 function formatPreviewDate(value: string) {

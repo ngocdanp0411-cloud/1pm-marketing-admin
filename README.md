@@ -14,8 +14,8 @@ Implemented surfaces:
 - `Hôm nay` action inbox for drafts, reviews, ready items, scheduled work,
   overdue work, and failed publishing.
 - One unified Content library from Brief through Published or Failed.
-- Brand-aware composer for pasted copy, media URLs, prompts/notes, checklist,
-  schedule, learning notes, and reusable content.
+- Brand-aware composer for pasted copy, media URLs/uploads, prompts/notes,
+  schedule, preview, learning notes, and reusable content.
 - Content Calendar derived directly from scheduled Content records.
 - Brand-scoped campaigns with related content and status progress.
 - Brand profiles for voice, tone, visual direction, CTA, hashtags, pillars,
