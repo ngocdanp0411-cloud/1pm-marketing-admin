@@ -1,5 +1,7 @@
+import { mediaUploadJsonLimitBytes } from "./config.js";
 import { HttpError, parseJsonBody, sendJson } from "./http-helpers.js";
-import { serveSpaFallback, serveStaticAsset } from "./static-files.js";
+import { saveUploadedMedia } from "./media-storage.js";
+import { serveSpaFallback, serveStaticAsset, serveUploadedAsset } from "./static-files.js";
 import { validateMutation } from "./validators.js";
 
 const resourceRouteNames = new Set(["brands", "channels", "campaigns", "content", "calendar", "social-posts", "integrations", "publish-logs", "notifications"]);
@@ -11,6 +13,10 @@ export function createRouter({ store, port, auth }) {
     const pathSegments = url.pathname.split("/").filter(Boolean);
 
     if (url.pathname !== "/api" && !url.pathname.startsWith("/api/")) {
+      if (await serveUploadedAsset(req, res)) {
+        return;
+      }
+
       if (await serveStaticAsset(req, res)) {
         return;
       }
@@ -51,6 +57,13 @@ export function createRouter({ store, port, auth }) {
     if (url.pathname === "/api/bootstrap" && method === "GET") {
       const payload = await store.getBootstrap(port);
       sendJson(req, res, 200, payload);
+      return;
+    }
+
+    if (url.pathname === "/api/media" && method === "POST") {
+      const payload = await parseJsonBody(req, { limitBytes: mediaUploadJsonLimitBytes, label: "Media upload" });
+      const uploadedMedia = await saveUploadedMedia(payload);
+      sendJson(req, res, 201, uploadedMedia);
       return;
     }
 

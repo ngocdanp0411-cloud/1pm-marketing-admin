@@ -25,7 +25,8 @@ schedule publication, and manage the item through a manual content library.
 - Scheduled items appear in Content Calendar.
 - Selecting a calendar item opens the edit modal.
 - Existing password-cookie authentication remains unchanged.
-- Binary upload remains a visible placeholder until object storage exists.
+- Direct image/video upload is available through local filesystem storage.
+  Durable object storage is still required before customer use.
 
 ## Validation
 

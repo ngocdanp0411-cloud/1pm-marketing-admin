@@ -39,6 +39,14 @@ export interface OperationsBootstrap {
   notifications?: OperationsNotification[];
 }
 
+export interface UploadedMedia {
+  filename: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  url: string;
+}
+
 export function fetchOperationsBootstrap(signal?: AbortSignal): Promise<OperationsBootstrap> {
   return apiRequest("/api/bootstrap", { signal });
 }
@@ -87,6 +95,18 @@ export function completeManualPublish(
   });
 }
 
+export async function uploadMediaFile(file: File): Promise<UploadedMedia> {
+  const dataBase64 = await readFileAsDataUrl(file);
+  return apiRequest("/api/media", {
+    method: "POST",
+    body: JSON.stringify({
+      filename: file.name,
+      contentType: file.type,
+      dataBase64,
+    }),
+  });
+}
+
 async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     ...init,
@@ -107,4 +127,13 @@ async function readErrorMessage(response: Response) {
   } catch {
     return "";
   }
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Không thể đọc file upload."));
+    reader.readAsDataURL(file);
+  });
 }

@@ -27,6 +27,8 @@ Current real operations:
 - Backend CRUD for brands, channels, campaigns, content, and supporting legacy
   resources.
 - JSON persistence in `data/app-state.json`.
+- Direct image/video upload for manual content, stored under `data/uploads` and
+  referenced through `mediaUrl`.
 - Manual publish completion with published URL, learning note, and publish log.
 - Facebook Page publishing through Graph API when `FACEBOOK_PAGE_ID` and
   `FACEBOOK_PAGE_ACCESS_TOKEN` are configured through the legacy provider route.
@@ -38,8 +40,8 @@ Known gaps:
 - Sessions are in memory and are not suitable for multi-instance or multi-user use.
 - No PostgreSQL or tenant isolation.
 - No background scheduler loop; scheduled content uses the manual publish flow.
-- Media binary upload/storage is not implemented; Content currently persists
-  image/media references as `mediaUrl`.
+- Media upload is local filesystem storage. It is fine for personal/demo use;
+  public customer use needs durable object storage.
 
 The current login is a temporary internal password gate for a private admin
 tool, not full multi-user authentication. Configure it on Railway with:

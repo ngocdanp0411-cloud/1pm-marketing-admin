@@ -805,6 +805,15 @@ dd svg { vertical-align: middle; margin-right: 6px; }
 .checklist-field { display: grid; gap: 8px; }
 .checklist-field label, .toggle-field { display: flex; align-items: flex-start; gap: 9px; padding: 9px; border: 1px solid var(--border); border-radius: 6px; background: rgba(0,0,0,.1); }
 .checklist-field input, .toggle-field input { width: 17px; height: 17px; flex: 0 0 auto; accent-color: var(--green); }
+.media-upload-field { display: grid; gap: 8px; }
+.media-upload-field label { position: relative; min-width: 0; min-height: 86px; display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px dashed var(--border-strong); border-radius: 8px; background: rgba(130,148,255,.06); cursor: pointer; }
+.media-upload-field label.uploading { cursor: wait; opacity: .72; }
+.media-upload-field label > svg { width: 26px; height: 26px; color: var(--green); flex: 0 0 auto; }
+.media-upload-field label span { min-width: 0; display: grid; gap: 4px; }
+.media-upload-field small, .media-upload-field p { color: var(--muted); line-height: 1.45; overflow-wrap: anywhere; }
+.media-upload-field input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: inherit; }
+.media-upload-field a { color: #c7d1ff; }
+.field-error { color: #ffc3c8 !important; }
 .manual-publish { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .publish-copy, .publish-tools { grid-column: 1 / -1; }
 .publish-copy { max-height: 220px; overflow: auto; padding: 14px; border: 1px solid var(--border); border-radius: 7px; background: rgba(0,0,0,.16); }

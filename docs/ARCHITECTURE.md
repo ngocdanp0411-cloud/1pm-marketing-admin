@@ -26,6 +26,7 @@ Railway runs the same Node service for API and static frontend.
 | Auth | `server/password-auth.js`, one admin password and in-memory cookie sessions. |
 | Validation | `server/validators.js`. |
 | Persistence | `server/state-store.js` with JSON file at `data/app-state.json`. |
+| Media storage | `server/media-storage.js` local upload store, served from `/uploads/*`. |
 | Provider adapter | `server/facebook-publisher.js` for Facebook Page Graph API. |
 | Deploy | Railway/Nixpacks; `npm run build`, then `npm start`. |
 
@@ -65,6 +66,8 @@ Core files:
 - `server/http-helpers.js` owns JSON parsing, auth, CORS, and error envelopes.
 - `server/password-auth.js` owns password comparison, session tokens, cookie parsing, and cookie serialization.
 - `server/static-files.js` serves built frontend assets and SPA fallback.
+- `server/media-storage.js` validates image/video uploads and writes local
+  media files.
 - `server/seed-*.js` seed initial state.
 - `server/facebook-publisher.js` is the only real external provider adapter.
 
@@ -109,7 +112,7 @@ Before public customer use, replace or add:
 - multi-user auth/session storage and authorization,
 - database-backed storage,
 - workspace/team tenancy,
-- media upload/object storage,
+- durable media object storage,
 - background scheduler/worker,
 - audit logs,
 - stricter CORS and security headers,

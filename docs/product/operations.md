@@ -58,9 +58,10 @@ Status moves through Brief, Draft, Review, Ready, Scheduled, then Published or
 Failed. Each status exposes one useful next action. Calendar, campaign detail,
 and publishing queue are filtered views of Content, not separate records.
 
-Binary file upload is not implemented yet because the app has no object
-storage. The composer shows an upload placeholder and persists asset URLs in
-the JSON backend.
+The composer supports direct image/video upload for personal use. Uploaded
+files are stored on the backend filesystem and the returned `/uploads/...` URL
+is persisted as `mediaUrl`. Public customer use still needs durable object
+storage such as S3, Cloudinary, or Supabase Storage.
 
 ## Manual Publishing
 
@@ -107,7 +108,8 @@ Authentication and Facebook provider behavior were not changed by US-013.
 
 ## Next Operational Slice
 
-- Add object storage for real media uploads.
+- Replace local filesystem uploads with durable object storage before customer
+  use.
 - Add durable database persistence before customer use.
 - Add provider OAuth and automatic publishing only after manual operations are
   stable.

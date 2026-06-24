@@ -129,6 +129,31 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     });
     assert.equal(patched.data.status, "Active");
 
+    const unauthenticatedUpload = await requestJsonWithResponse(port, "/api/media", {
+      method: "POST",
+      body: {
+        filename: "blocked.png",
+        contentType: "image/png",
+        dataBase64: Buffer.from("blocked").toString("base64"),
+      },
+    });
+    assert.equal(unauthenticatedUpload.response.status, 401);
+
+    const uploadedMedia = await api.post("/api/media", {
+      filename: "manual-launch.png",
+      contentType: "image/png",
+      dataBase64: Buffer.from("uploaded media fixture").toString("base64"),
+    });
+    assert.equal(uploadedMedia.ok, true);
+    assert.match(uploadedMedia.data.url, /^\/uploads\//);
+    assert.equal(uploadedMedia.data.contentType, "image/png");
+    assert.equal(uploadedMedia.data.sizeBytes, Buffer.byteLength("uploaded media fixture"));
+
+    const uploadedAsset = await fetch(`http://127.0.0.1:${port}${uploadedMedia.data.url}`);
+    assert.equal(uploadedAsset.status, 200);
+    assert.equal(uploadedAsset.headers.get("content-type"), "image/png");
+    assert.equal(await uploadedAsset.text(), "uploaded media fixture");
+
     const manualContent = await api.post("/api/content", {
       brandId: createdBrand.data.id,
       channelId: createdChannel.data.id,
@@ -141,7 +166,7 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
       owner: "Ngọc Dân",
       campaignId: created.data.id,
       copy: "Copy drafted in Claude and pasted into the manual composer.",
-      mediaUrl: "https://cdn.1pm.test/manual-launch.png",
+      mediaUrl: uploadedMedia.data.url,
       visualPromptNotes: "ChatGPT visual: clean product hero with dark background.",
       visualNotes: "ChatGPT visual: clean product hero with dark background.",
       copyPromptNotes: "Keep the CTA concise.",
@@ -162,7 +187,7 @@ test("backend API supports health, auth, bootstrap, and campaign CRUD", async ()
     assert.equal(manualContent.data.brandId, createdBrand.data.id);
     assert.equal(manualContent.data.channelId, createdChannel.data.id);
     assert.equal(manualContent.data.reusable, true);
-    assert.equal(manualContent.data.mediaUrl, "https://cdn.1pm.test/manual-launch.png");
+    assert.equal(manualContent.data.mediaUrl, uploadedMedia.data.url);
     assert.equal(manualContent.data.scheduledAt, "2026-06-24T10:30");
 
     const editedManualContent = await api.patch(`/api/content/${manualContent.data.id}`, {

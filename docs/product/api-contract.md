@@ -61,6 +61,7 @@ Frontend API helpers unwrap `payload.data ?? payload`.
 | channels | `GET/POST /api/channels`, `GET/PATCH/DELETE /api/channels/:id` | Generic Brand-scoped Channel CRUD. |
 | campaigns | `GET/POST /api/campaigns`, `GET/PATCH/DELETE /api/campaigns/:id` | Brand-scoped campaign CRUD. |
 | content | `GET/POST /api/content`, `GET/PATCH/DELETE /api/content/:id` | Unified Brand/Channel/Campaign-aware content CRUD. |
+| media upload | `POST /api/media` | Protected JSON upload endpoint for images/videos. Returns `/uploads/...` URL for `mediaUrl`. |
 | manual publish | `POST /api/content/:id/manual-publish` | Marks unified Content Published/Failed and appends a PublishLog. |
 | calendar | `GET/POST /api/calendar`, `GET/PATCH/DELETE /api/calendar/:id` | Generic CRUD. |
 | social posts | `GET/POST /api/social-posts`, `GET/PATCH/DELETE /api/social-posts/:id` | Generic CRUD plus publish action. Supports `mediaUrl` as a string or null. |
@@ -81,6 +82,11 @@ collections.
 
 The JSON store is acceptable for personal v1. Public customer use requires a
 database-backed repository layer and tenancy boundaries.
+
+Uploaded media currently lives on the local filesystem under `data/uploads` by
+default. Railway deployments with ephemeral filesystem storage can lose uploaded
+files on rebuild/restart; use object storage before relying on this for
+customer data.
 
 ## Validation
 

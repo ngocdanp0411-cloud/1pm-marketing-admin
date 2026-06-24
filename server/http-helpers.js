@@ -51,10 +51,12 @@ export function handlePreflight(req, res) {
   res.end();
 }
 
-export async function parseJsonBody(req) {
+export async function parseJsonBody(req, options = {}) {
+  const limitBytes = options.limitBytes ?? jsonBodyLimitBytes;
+  const label = options.label ?? "JSON body";
   const contentLength = Number.parseInt(req.headers["content-length"] ?? "0", 10);
-  if (Number.isFinite(contentLength) && contentLength > jsonBodyLimitBytes) {
-    throw new HttpError(413, "PAYLOAD_TOO_LARGE", "JSON body exceeds the 1 MB limit.");
+  if (Number.isFinite(contentLength) && contentLength > limitBytes) {
+    throw new HttpError(413, "PAYLOAD_TOO_LARGE", `${label} exceeds the allowed size limit.`);
   }
 
   const chunks = [];
@@ -62,8 +64,8 @@ export async function parseJsonBody(req) {
 
   for await (const chunk of req) {
     totalBytes += chunk.length;
-    if (totalBytes > jsonBodyLimitBytes) {
-      throw new HttpError(413, "PAYLOAD_TOO_LARGE", "JSON body exceeds the 1 MB limit.");
+    if (totalBytes > limitBytes) {
+      throw new HttpError(413, "PAYLOAD_TOO_LARGE", `${label} exceeds the allowed size limit.`);
     }
 
     chunks.push(chunk);

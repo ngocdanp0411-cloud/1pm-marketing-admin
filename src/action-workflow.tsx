@@ -1,6 +1,7 @@
-import { AlertCircle, Check, Clipboard, ExternalLink, LoaderCircle, X } from "lucide-react";
+import { AlertCircle, Check, Clipboard, ExternalLink, LoaderCircle, Upload, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { contentStatuses, contentTypeOptions, platformOptions } from "./data";
+import { uploadMediaFile } from "./operations-api";
 import type { Brand, CampaignRow, Channel, ContentItem } from "./types";
 
 export type WorkflowKind = "brand" | "channel" | "campaign" | "content" | "manual-publish";
@@ -28,6 +29,8 @@ export function ActionWorkflowModal(props: Props) {
   const modalRef = useRef<HTMLFormElement>(null);
   const [form, setForm] = useState(() => buildInitialForm(props.request));
   const [checklist, setChecklist] = useState<string[]>(() => initialChecklist(props.request));
+  const [mediaUploading, setMediaUploading] = useState(false);
+  const [mediaUploadError, setMediaUploadError] = useState("");
   const selectedBrand = props.brands.find((brand) => brand.id === form.brandId);
   const brandChannels = props.channels.filter((channel) => channel.brandId === form.brandId);
   const brandCampaigns = props.campaigns.filter((campaign) => campaign.brandId === form.brandId);
@@ -35,6 +38,8 @@ export function ActionWorkflowModal(props: Props) {
   useEffect(() => {
     setForm(buildInitialForm(props.request));
     setChecklist(initialChecklist(props.request));
+    setMediaUploading(false);
+    setMediaUploadError("");
   }, [props.request]);
 
   useEffect(() => {
@@ -59,12 +64,26 @@ export function ActionWorkflowModal(props: Props) {
     setChecklist((current) => current.includes(item) ? current.filter((value) => value !== item) : [...current, item]);
   }
 
+  async function uploadMedia(file: File) {
+    setMediaUploading(true);
+    setMediaUploadError("");
+    try {
+      const media = await uploadMediaFile(file);
+      update("mediaUrl", media.url);
+    } catch (cause) {
+      setMediaUploadError(cause instanceof Error ? cause.message : "Không thể upload file.");
+    } finally {
+      setMediaUploading(false);
+    }
+  }
+
   function submit(event: FormEvent) {
     event.preventDefault();
     props.onSubmit(props.request, buildPayload(props.request.kind, form, checklist));
   }
 
   const submitBlocked = props.busy
+    || mediaUploading
     || (props.request.kind === "brand" && !form.name)
     || (props.request.kind === "channel" && (!form.brandId || !form.pageName))
     || (props.request.kind === "campaign" && (!form.brandId || !form.name))
@@ -95,6 +114,12 @@ export function ActionWorkflowModal(props: Props) {
               <Section title="B. Nội dung là gì?">
                 <Field label="Nội dung chính" value={form.copy} onChange={(value) => update("copy", value)} multiline full />
                 <Field label="URL ảnh / video" type="url" value={form.mediaUrl} onChange={(value) => update("mediaUrl", value)} full />
+                <MediaUploadField
+                  mediaUrl={form.mediaUrl}
+                  error={mediaUploadError}
+                  uploading={mediaUploading}
+                  onUpload={(file) => void uploadMedia(file)}
+                />
                 <Field label="Ghi chú prompt hình ảnh" value={form.visualPromptNotes} onChange={(value) => update("visualPromptNotes", value)} multiline full />
                 <Field label="Ghi chú prompt nội dung" value={form.copyPromptNotes} onChange={(value) => update("copyPromptNotes", value)} multiline full />
                 <Field label="Tags, cách nhau bằng dấu phẩy" value={form.tags} onChange={(value) => update("tags", value)} full />
@@ -195,6 +220,37 @@ function ManualPublishFields({ form, content, channels, update }: FormProps & { 
     <Field label="Ghi chú kết quả / lỗi" value={form.note} onChange={(v) => update("note", v)} multiline />
     <Select label="Kết quả" value={form.publishResult} options={["Published", "Failed"].map(simpleOption)} onChange={(v) => update("publishResult", v)} />
   </div>;
+}
+
+function MediaUploadField({ mediaUrl, error, uploading, onUpload }: {
+  mediaUrl?: string;
+  error: string;
+  uploading: boolean;
+  onUpload: (file: File) => void;
+}) {
+  return (
+    <div className="media-upload-field full">
+      <label className={uploading ? "uploading" : ""}>
+        <Upload aria-hidden="true" />
+        <span>
+          <strong>{uploading ? "Đang upload…" : "Upload ảnh / video"}</strong>
+          <small>JPG, PNG, WebP, GIF, MP4, WebM hoặc MOV. Tối đa 15MB.</small>
+        </span>
+        <input
+          accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+          disabled={uploading}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = "";
+            if (file) onUpload(file);
+          }}
+          type="file"
+        />
+      </label>
+      {mediaUrl && <p>Đang dùng: <a href={mediaUrl} target="_blank" rel="noreferrer">{mediaUrl}</a></p>}
+      {error && <p className="field-error">{error}</p>}
+    </div>
+  );
 }
 
 function BrandContext({ brand }: { brand?: Brand }) {
