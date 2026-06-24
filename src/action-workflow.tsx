@@ -1,4 +1,4 @@
-import { AlertCircle, Check, Clipboard, ExternalLink, LoaderCircle, Upload, X } from "lucide-react";
+import { AlertCircle, CalendarClock, Check, Clipboard, ExternalLink, Eye, LoaderCircle, Upload, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { contentStatuses, contentTypeOptions, platformOptions } from "./data";
 import { uploadMediaFile } from "./operations-api";
@@ -139,7 +139,7 @@ export function ActionWorkflowModal(props: Props) {
                 <label className="toggle-field full"><input type="checkbox" checked={form.reusable === "true"} onChange={(event) => update("reusable", String(event.target.checked))} /><span>Có thể tái sử dụng nội dung này</span></label>
               </Section>
             </div>
-            <BrandContext brand={selectedBrand} />
+            <ComposerSidePanel form={form} brand={selectedBrand} />
           </div>
         )}
         {props.request.kind === "manual-publish" && <ManualPublishFields form={form} content={props.request.initial as ContentItem} channels={props.channels} update={update} />}
@@ -253,6 +253,56 @@ function MediaUploadField({ mediaUrl, error, uploading, onUpload }: {
   );
 }
 
+function ComposerSidePanel({ form, brand }: { form: Record<string, string>; brand?: Brand }) {
+  return (
+    <aside className="composer-side-panel">
+      <ContentPreview form={form} brand={brand} />
+      <BrandContext brand={brand} />
+    </aside>
+  );
+}
+
+function ContentPreview({ form, brand }: { form: Record<string, string>; brand?: Brand }) {
+  const mediaUrl = form.mediaUrl?.trim();
+  const isVideo = Boolean(mediaUrl && /\.(mp4|webm|mov)(\?|#|$)/i.test(mediaUrl));
+  const tags = splitTags(form.tags);
+  return (
+    <section className="content-preview-card" aria-label="Xem trước nội dung">
+      <header>
+        <span><Eye />Xem trước</span>
+        <strong>{form.status || "Draft"}</strong>
+      </header>
+      <div className="preview-post">
+        <div className="preview-author">
+          <span>{brand?.name?.slice(0, 2).toUpperCase() || "1P"}</span>
+          <div>
+            <strong>{brand?.name || "1PM Marketing"}</strong>
+            <small>{form.contentType || "Caption"} · {form.scheduledAt ? formatPreviewDate(form.scheduledAt) : "Chưa hẹn giờ"}</small>
+          </div>
+        </div>
+        <h3>{form.title || "Tiêu đề nội bộ sẽ hiện ở đây"}</h3>
+        <p>{form.copy || "Nội dung chính từ Claude hoặc anh tự viết sẽ hiển thị ở đây để kiểm tra trước khi lưu."}</p>
+        {mediaUrl ? (
+          <div className="preview-media">
+            {isVideo ? (
+              <video src={mediaUrl} controls playsInline />
+            ) : (
+              <img src={mediaUrl} alt="Media preview" />
+            )}
+          </div>
+        ) : (
+          <div className="preview-media empty">Chưa có ảnh/video</div>
+        )}
+        {tags.length > 0 && <div className="preview-tags">{tags.map((tag) => <span key={tag}>#{tag.replace(/^#/, "")}</span>)}</div>}
+      </div>
+      <footer>
+        <span><CalendarClock />{form.scheduledAt ? formatPreviewDate(form.scheduledAt) : "Chưa lên lịch"}</span>
+        {mediaUrl && <a href={mediaUrl} target="_blank" rel="noreferrer"><ExternalLink />Mở media</a>}
+      </footer>
+    </section>
+  );
+}
+
 function BrandContext({ brand }: { brand?: Brand }) {
   if (!brand) return <aside className="brand-context empty"><strong>Brand Context</strong><p>Chọn Brand trước để xem voice, visual, CTA và checklist.</p></aside>;
   const rows = [
@@ -351,3 +401,9 @@ function channelOption(item: Channel) { return { value: item.id ?? "", label: `$
 function simpleOption(value: string) { return { value, label: value }; }
 function uniqueLines(value: string) { return [...new Set(value.split(/\n|;/).map((line) => line.trim()).filter(Boolean))]; }
 function toDatetimeLocal(value?: string) { return value ? value.replace("Z", "").slice(0, 16) : ""; }
+function splitTags(value?: string) { return (value ?? "").split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 6); }
+function formatPreviewDate(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(parsed);
+}
